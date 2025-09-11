@@ -1,0 +1,461 @@
+# -*- coding: utf-8 -*-
+import pandas as pd
+import numpy as np
+import arviz as az
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+import seaborn as sns
+
+plt.rcParams['font.family'] = "DeJavu Serif"
+plt.rcParams['font.serif'] = "Cambria Math"
+plt.rcParams['font.size'] = 12
+
+sns.set(style="whitegrid", font="DeJavu Serif")
+# sns.set_style("whitegrid")
+
+data = pd.read_csv("./data/depression_covid19_UK_wave6_data.csv")
+
+datas = []
+for d in data.columns[9:]:
+    df = data.drop(data.columns[9:], axis=1)
+    df["Score"] = data[d]
+    df["Question"] = np.repeat(d, len(df))
+    datas.append(df)
+
+data = pd.concat(datas)
+
+data = data.sort_values(["Income", "Score"])
+
+# data = data[data.Question.isin(["Dep_2", "Dep_4"])]
+
+idata = az.from_netcdf("./idata_wave6_depression_ordered.nc")
+
+
+y_pos = az.extract(idata.posterior.y_hat_probs).y_hat_probs.values
+
+K = len(data.Score.unique())
+
+for s in tqdm(range(K)):
+    y_p = y_pos[:,s,:]
+    y_m = y_p.mean(axis=1)
+    y_s = y_p.std(axis=1)
+    y_h5, y_h95 = az.hdi(y_p.T, hdi_prob=0.9).T
+    data["m_"+str(s)] = y_m
+    data["s_"+str(s)] = y_s
+    data["h5_"+str(s)] = y_h5
+    data["h95_"+str(s)] = y_h95
+
+
+data = data.sort_values("Income")
+
+income_legend = ["£0 - £300", "£301 - £490",  "£491 - £740 ", "£741 - £1,111", 
+                 "£1,112 or more"]
+
+score_legend = ["Not at all (0)", "Several days (1)", 
+                "More than half the days (2)", "Nearly every day (3)"]
+
+question_description = "Over the last two weeks, how often have you been bothered by the following problems?"
+
+question_legend = ["Little interest or pleasure in doing things",
+                   "Feeling down, depressed, or hopeless",
+                   "Trouble falling or staying asleep, or sleeping too much",
+                   "Feeling tired or having little energy",
+                   "Poor appetite or overeating",
+                   "Feeling bad about yourself - or that you are a failure or have let yourself or your family down",
+                   "Trouble concentrating on things, such as reading the newspaper or watching television",
+                   "Moving or speaking so slowly that other people have noticed? Or the opposite - being so fidgety or restless that you have been moving around more than usual",
+                   "Thoughts that you would be better dead or of hurting yourself in some way",
+                   ]
+
+
+income_rep = {"Q1":"£0 - £300", "Q2":"£301 - £490",  
+              "Q3":"£491 - £740 ", "Q4":"£741 - £1,111", 
+                 "Q5":"£1,112 or more"}
+
+data.Income.replace(income_rep, inplace=True)
+
+data["Question"] = data["Question"].str.replace("Dep_","Q")
+
+male = data[data.Gender=="Male"]
+female = data[data.Gender=="Female"]
+
+male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
+
+female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
+
+
+means = ["m_0", "m_1", "m_2", "m_3"]
+
+panels = ["A. ", "B. ", "C. ", "D. "]
+
+fig, axs = plt.subplots(2,2, figsize=(12,6))
+axs = [ axs[0,0], axs[0,1], axs[1,0], axs[1,1]]
+for k in tqdm(range(K)):
+    df = male[male.Score==k]
+    df = df.pivot_table(index='Income', columns='Question', values=means[k], sort=False)
+    df = df[sorted(df.columns)]
+    df.fillna(0, inplace=True) 
+    sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", cbar_kws={'label': 'Probability'})
+    axs[k].set_title(panels[k]+score_legend[k], loc="left")
+    axs[k].set_ylabel("Weekly Household Income", size=10)
+plt.suptitle("Male", size=16)    
+plt.tight_layout()
+plt.savefig("male_probs_ordered_wave6.png", dpi=300)
+plt.show()
+
+
+fig, axs = plt.subplots(2,2, figsize=(12,6))
+axs = [ axs[0,0], axs[0,1], axs[1,0], axs[1,1]]
+for k in tqdm(range(K)):
+    df = female[female.Score==k]
+    df = df.pivot_table(index='Income', columns='Question', values=means[k], sort=False)
+    df = df[sorted(df.columns)]
+    df.fillna(0, inplace=True) 
+    sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", cbar_kws={'label': 'Probability'})
+    axs[k].set_title(panels[k]+score_legend[k], loc="left")
+    axs[k].set_ylabel("Weekly Household Income", size=10)
+plt.suptitle("Female", size=16)    
+plt.tight_layout()
+plt.savefig("female_probs_ordered_wave6.png", dpi=300)
+plt.show()
+
+
+male = male.drop("Question", axis=1)
+female = female.drop("Question", axis=1)
+male = male.groupby(["Income", "Score"], as_index=False, sort=False).mean()
+female = female.groupby(["Income", "Score"], as_index=False, sort=False).mean()
+
+
+dfs = [female, male]
+titles = ["A. Female", "B. Male"]
+fig, axs = plt.subplots(1,2, figsize=(12,6))
+for d in range(2):
+    title = titles[d]
+    df = dfs[d]
+    df = df[["Income","Score","m_0","m_1","m_2","m_3","s_0","s_1","s_2","s_3"]]
+    # df = df.groupby(["Income", "Score"], as_index=False, sort=False).mean()
+    datas = []
+    for m,s in zip(df.columns[2:6], df.columns[6:]):
+        da = df.drop(df.columns[2:], axis=1)
+        da["Mean"] = df[m]
+        da["SD"] = df[s]
+        da["Score"] = np.repeat(m.replace("m_",""), len(da))
+        datas.append(da.drop_duplicates("Income"))
+    df = pd.concat(datas)
+    df = df[sorted(df.columns)]
+    sns.barplot(df, x="Score", y="Mean", hue="Income", ax=axs[d])
+    for i, k in enumerate(df['Score'].unique()):
+        subset = df[df['Score'] == k]
+        axs[d].errorbar(x=np.array([i-0.32, i-0.16, i, i+0.16, i+0.32]), y=subset["Mean"], 
+                     yerr=subset['SD'], fmt='none', ecolor='black', capsize=5)
+    axs[d].set_title(title, size=16, loc="left")
+    axs[d].set_ylabel("Probability", size=14)
+    axs[d].set_xlabel("Answer", size=14)
+    axs[d].set_ylim(0,1)
+    axs[d].legend(title='Weekly Household Income')
+    axs[d].grid(alpha=0.5)
+    # axs[d].set_xticks(np.arange(4), score_legend, rotation=45)
+plt.suptitle("Average Answer Probability", size=18)    
+plt.tight_layout()
+plt.savefig("score_probs_ordered_wave6.png", dpi=300)
+plt.show()
+
+
+
+data = pd.read_csv("./data/depression_covid19_UK_wave6_data.csv")
+datas = []
+for d in data.columns[9:]:
+    df = data.drop(data.columns[9:], axis=1)
+    df["Score"] = data[d]
+    df["Question"] = np.repeat(d, len(df))
+    datas.append(df)
+
+data = pd.concat(datas)
+
+data = data.sort_values(["Income", "Score"])
+
+pred_m = az.extract(idata.posterior_predictive)
+pred_m = pred_m.rename_dims({"index":"ID"})
+
+y_probs = az.extract(idata.posterior)["y_hat_probs"].values
+m_probs = y_probs.mean(axis=2)
+
+### plot average
+qs_ids = []
+for i in tqdm(data.Question.unique()):
+    for k in data.Score.unique():
+        m_p = m_probs[:,k]
+        data["yp"] = m_p
+        q_df = data[data.Question==i]
+        qs_df = q_df[q_df.Score==k]
+        qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+        qs_ids.append(np.sum(qs_da.T, axis=1)/len(q_df))
+        # qs_ids.append(np.sum(qs_da.T + (qs_df["yp"].values**2), axis=1)/len(q_df))
+
+q_ids = np.array(qs_ids)    
+q_preds = q_ids.reshape(9,4,y_pos.shape[2])
+
+questions = data.Question.unique()
+Q = len(questions)
+
+for i in tqdm(range(Q)):
+    num = questions[i]
+    data_i = data[data.Question==questions[i]]
+    prop = [len(data_i[data_i.Score==s])/len(data_i) for s in range(K)]
+    pmeans = q_preds[i].mean(axis=1)
+    lo = az.hdi(q_preds[i].T, hdi_prob=0.9).T[0] #pmeans - q_preds[i].std(axis=1) #
+    up = az.hdi(q_preds[i].T, hdi_prob=0.9).T[1] #pmeans + q_preds[i].std(axis=1) #
+    plt.plot(pmeans, color="purple", linewidth=2, label='Predictions Mean')
+    plt.fill_between(np.arange(K), lo, up, color="purple", alpha=0.2, label='90% HDI')
+    plt.plot(prop, color='slategray', linewidth=2, linestyle=':', label='Observed Score')
+    plt.title(questions[i]+' Posterior Probability', size=11)
+    plt.grid(alpha=0.5)
+    plt.legend(prop={'size': 10})
+    plt.xticks(range(K))
+    plt.xlabel('Score')
+    plt.ylabel('Probability')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./ordered/"+questions[i]+'_posterior_prob_wave6.png', dpi=300)
+    plt.close()
+
+
+
+### plot males
+dfm = data[data.Gender=="Male"]
+qs_ids = []
+for i in tqdm(dfm.Question.unique()):
+    for k in dfm.Score.unique():
+        m_p = m_probs[:,k]
+        data["yp"] = m_p
+        q_df = dfm[dfm.Question==i]
+        qs_df = q_df[q_df.Score==k]
+        qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+        qs_ids.append(np.sum(qs_da.T, axis=1)/len(q_df))
+        # qs_ids.append(np.sum(qs_da.T + (qs_df["yp"].values**2), axis=1)/len(q_df))
+
+q_ids = np.array(qs_ids)    
+q_preds = q_ids.reshape(9,4,y_pos.shape[2])
+
+questions = data.Question.unique()
+Q = len(questions)
+
+for i in tqdm(range(Q)):
+    num = questions[i]
+    data_i = dfm[dfm.Question==questions[i]]
+    prop = [len(data_i[data_i.Score==s])/len(data_i) for s in range(K)]
+    pmeans = q_preds[i].mean(axis=1)
+    lo = az.hdi(q_preds[i].T, hdi_prob=0.9).T[0] #pmeans - q_preds[i].std(axis=1) #
+    up = az.hdi(q_preds[i].T, hdi_prob=0.9).T[1] #pmeans + q_preds[i].std(axis=1) #
+    plt.plot(pmeans, color="orangered", linewidth=2, label='Predictions Mean')
+    plt.fill_between(np.arange(K), lo, up, color="orangered", alpha=0.2, label='90% HDI')
+    plt.plot(prop, color='slategray', linewidth=2, linestyle=':', label='Observed Score')
+    plt.title(questions[i]+' Posterior Probability (Male)', size=11)
+    plt.grid(alpha=0.5)
+    plt.legend(prop={'size': 10})
+    plt.xticks(range(K))
+    plt.xlabel('Score')
+    plt.ylabel('Probability')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./ordered/"+questions[i]+'_posterior_prob_males_wave6.png', dpi=300)
+    plt.close()
+
+
+### plot females
+dff = data[data.Gender=="Female"]
+qs_ids = []
+for i in tqdm(dff.Question.unique()):
+    for k in dff.Score.unique():
+        m_p = m_probs[:,k]
+        data["yp"] = m_p
+        q_df = dff[dff.Question==i]
+        qs_df = q_df[q_df.Score==k]
+        qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+        qs_ids.append(np.sum(qs_da.T, axis=1)/len(q_df))
+        # qs_ids.append(np.sum(qs_da.T + (qs_df["yp"].values**2), axis=1)/len(q_df))
+
+q_ids = np.array(qs_ids)    
+q_preds = q_ids.reshape(9,4,y_pos.shape[2])
+
+questions = data.Question.unique()
+Q = len(questions)
+
+for i in tqdm(range(Q)):
+    num = questions[i]
+    data_i = dff[dff.Question==questions[i]]
+    prop = [len(data_i[data_i.Score==s])/len(data_i) for s in range(K)]
+    pmeans = q_preds[i].mean(axis=1)
+    lo = az.hdi(q_preds[i].T, hdi_prob=0.9).T[0] #pmeans - q_preds[i].std(axis=1) #
+    up = az.hdi(q_preds[i].T, hdi_prob=0.9).T[1] #pmeans + q_preds[i].std(axis=1) #
+    plt.plot(pmeans, color="steelblue", linewidth=2, label='Predictions Mean')
+    plt.fill_between(np.arange(K), lo, up, color="steelblue", alpha=0.2, label='90% HDI')
+    plt.plot(prop, color='slategray', linewidth=2, linestyle=':', label='Observed Score')
+    plt.title(questions[i]+' Posterior Probability (Female)', size=11)
+    plt.grid(alpha=0.5)
+    plt.legend(prop={'size': 10})
+    plt.xticks(range(K))
+    plt.xlabel('Score')
+    plt.ylabel('Probability')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./ordered/"+questions[i]+'_posterior_prob_females_wave6.png', dpi=300)
+    plt.close()
+    
+
+#### High income
+dfh = data[data.Income=="Q5"]
+qs_ids = []
+for i in tqdm(dfh.Question.unique()):
+    for k in dfh.Score.unique():
+        m_p = m_probs[:,k]
+        data["yp"] = m_p
+        q_df = dfh[dfh.Question==i]
+        qs_df = q_df[q_df.Score==k]
+        qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+        qs_ids.append(np.sum(qs_da.T, axis=1)/len(q_df))
+        # qs_ids.append(np.sum(qs_da.T + (qs_df["yp"].values**2), axis=1)/len(q_df))
+
+q_ids = np.array(qs_ids)    
+q_preds = q_ids.reshape(9,4,y_pos.shape[2])
+
+questions = data.Question.unique()
+Q = len(questions)
+
+for i in tqdm(range(Q)):
+    num = questions[i]
+    data_i = dfh[dfh.Question==questions[i]]
+    prop = [len(data_i[data_i.Score==s])/len(data_i) for s in range(K)]
+    pmeans = q_preds[i].mean(axis=1)
+    lo = az.hdi(q_preds[i].T, hdi_prob=0.9).T[0] #pmeans - q_preds[i].std(axis=1) #
+    up = az.hdi(q_preds[i].T, hdi_prob=0.9).T[1] #pmeans + q_preds[i].std(axis=1) #
+    plt.plot(pmeans, color="green", linewidth=2, label='Predictions Mean')
+    plt.fill_between(np.arange(K), lo, up, color="green", alpha=0.2, label='90% HDI')
+    plt.plot(prop, color='slategray', linewidth=2, linestyle=':', label='Observed Score')
+    plt.title(questions[i]+' Posterior Probability (High Income)', size=11)
+    plt.grid(alpha=0.5)
+    plt.legend(prop={'size': 10})
+    plt.xticks(range(K))
+    plt.xlabel('Score')
+    plt.ylabel('Probability')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./ordered/"+questions[i]+'_posterior_prob_highi_wave6.png', dpi=300)
+    plt.close()
+
+
+
+#### low income
+dfl = data[data.Income=="Q1"]
+qs_ids = []
+for i in tqdm(dfl.Question.unique()):
+    for k in dfl.Score.unique():
+        m_p = m_probs[:,k]
+        data["yp"] = m_p
+        q_df = dfl[dfl.Question==i]
+        qs_df = q_df[q_df.Score==k]
+        qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+        qs_ids.append(np.sum(qs_da.T, axis=1)/len(q_df))
+        # qs_ids.append(np.sum(qs_da.T + (qs_df["yp"].values**2), axis=1)/len(q_df))
+
+q_ids = np.array(qs_ids)    
+q_preds = q_ids.reshape(9,4,y_pos.shape[2])
+
+questions = data.Question.unique()
+Q = len(questions)
+
+for i in tqdm(range(Q)):
+    num = questions[i]
+    data_i = dfl[dfl.Question==questions[i]]
+    prop = [len(data_i[data_i.Score==s])/len(data_i) for s in range(K)]
+    pmeans = q_preds[i].mean(axis=1)
+    lo = az.hdi(q_preds[i].T, hdi_prob=0.9).T[0] #pmeans - q_preds[i].std(axis=1) #
+    up = az.hdi(q_preds[i].T, hdi_prob=0.9).T[1] #pmeans + q_preds[i].std(axis=1) #
+    plt.plot(pmeans, color="peru", linewidth=2, label='Predictions Mean')
+    plt.fill_between(np.arange(K), lo, up, color="peru", alpha=0.2, label='90% HDI')
+    plt.plot(prop, color='slategray', linewidth=2, linestyle=':', label='Observed Score')
+    plt.title(questions[i]+' Posterior Probability (Low Income)', size=11)
+    plt.grid(alpha=0.5)
+    plt.legend(prop={'size': 10})
+    plt.xticks(range(K))
+    plt.xlabel('Score')
+    plt.ylabel('Probability')
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig("./ordered/"+questions[i]+'_posterior_prob_lowi_wave6.png', dpi=300)
+    plt.close()
+
+
+
+#### Dep score
+qs_ids = []
+for i in tqdm(data.Question.unique()):
+    for j in data.Income.unique():
+        for g in data.Gender.unique():
+            for k in data.Score.unique():
+                q_df = data[data.Question==i]
+                qj_df = q_df[q_df.Income==j]
+                qg_df = qj_df[qj_df.Gender==g]
+                qs_df = qg_df[qg_df.Score==k]
+                qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
+                # qs_ids.append(qg_da.mean(axis=0))
+                qs_ids.append(np.max(qs_da.T, axis=1)/len(qs_df))
+  
+q_preds = np.array(qs_ids).reshape(9,5,2,4,y_pos.shape[2])
+
+m_ans = np.flip(q_preds.sum(axis=(3,0)).mean(axis=2))
+s_ans = np.flip(q_preds.sum(axis=(3,0)).std(axis=2))
+g_ans = np.array([["Female", "Male"] for i in  range(len(m_ans))]).flatten()
+i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
+
+dfi = pd.read_csv("./data/depression_covid19_UK_wave6_data.csv")
+dfi = dfi.sort_values("Income")
+income_rep = {"Q1":"£0 - £300", "Q2":"£301 - £490",  
+              "Q3":"£491 - £740 ", "Q4":"£741 - £1,111", 
+                 "Q5":"£1,112 or more"}
+dfi.Income.replace(income_rep, inplace=True)
+
+df_ans = pd.DataFrame({"Mean":m_ans.flatten(), "SD":s_ans.flatten(), 
+                       "Gender":g_ans, "Income":i_ans})
+df_ans.Income.replace(income_rep, inplace=True)
+
+fig, axs = plt.subplots(2,1, figsize=(8,8))
+sns.violinplot(dfi, x="Income", y="Dep_Total", hue="Gender", ax=axs[0])
+axs[0].set_ylabel("Added Score")
+axs[0].set_title("A. Observed PHQ-9 Total Scores", loc="left", size=16)
+sns.barplot(df_ans, x="Income", y="Mean", hue="Gender", ax=axs[1])
+for i, j in enumerate(df_ans['Income'].unique()):
+    subset = df_ans[df_ans['Income'] == j]
+    axs[1].errorbar(x=np.array([i-0.2, i+0.2]), y=subset["Mean"], 
+                 yerr=subset['SD'], fmt='none', ecolor='black', capsize=5)
+axs[1].set_title("B. Averaged Posterior Predictive Distributions", loc="left", size=16)
+axs[1].set_ylabel("Posterior Predictive Mean (Added Score)")
+plt.tight_layout()
+plt.savefig("violin_plots_wave6.png", dpi=300)
+plt.show()
+plt.close()
+
+
+
+#save summary by sex
+sex_summ = pd.concat([female,male])
+sex_summ = sex_summ.round(2)
+sex_summ = sex_summ.drop(["s_0","s_1","s_2","s_3"], axis=1)
+sex_summ["90%HDI_0"] = sex_summ.apply(lambda row: f"{row['h5_0']}, {row['h95_0']}", axis=1)
+sex_summ["90%HDI_1"] = sex_summ.apply(lambda row: f"{row['h5_1']}, {row['h95_1']}", axis=1)
+sex_summ["90%HDI_2"] = sex_summ.apply(lambda row: f"{row['h5_2']}, {row['h95_2']}", axis=1)
+sex_summ["90%HDI_3"] = sex_summ.apply(lambda row: f"{row['h5_3']}, {row['h95_3']}", axis=1)
+sex_summ = sex_summ[sex_summ.Score==0]
+sex_summ["Gender"] = list(np.repeat("Female", 5)) + list(np.repeat("Male", 5))
+sex_summ = sex_summ.drop(["h5_0","h5_1","h5_2","h5_3", "h95_0","h95_1","h95_2","h95_3"], axis=1)
+sex_summ = sex_summ.drop(["Dep_Total","Score"], axis=1)
+custom_order = ["Gender", "Income", "m_0","90%HDI_0", "m_1","90%HDI_1","m_2", "90%HDI_2","m_3","90%HDI_3"]
+sex_summ = sex_summ.loc[:, custom_order]
+sex_summ.to_csv("summay_by_sex_depression_wave6.csv", index=False)

@@ -1,0 +1,5 @@
+,mean,sd,hdi_5,hdi_95,comment
+MAE,0.85,0.01,0.83,0.86,"On average, our predictions are ±0.85 categories away from the true values"
+concordance,0.79,0.0,0.78,0.79,79.0% of predictions are within one category of the true value
+kappa,0.11,0.01,0.1,0.12,Our predictions agree with true values 11.0% better than random chance. Note that Kappa penalizes more for larger disagreements (weighted by squared distance)
+coefficients,-0.16,0.77,-0.92,1.06,95% of all coefficients well within prior ranges
