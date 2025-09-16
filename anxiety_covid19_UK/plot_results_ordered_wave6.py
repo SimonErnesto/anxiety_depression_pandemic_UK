@@ -83,6 +83,7 @@ for k in tqdm(range(K)):
     df = df[sorted(df.columns)]
     df.fillna(0, inplace=True) 
     sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", cbar_kws={'label': 'Probability'})
+    axs[k].set_yticklabels(["Inc1", "Inc2", "Inc3", "Inc4", "Inc5"], rotation=0)
     axs[k].set_title(panels[k]+score_legend[k], loc="left")
     axs[k].set_ylabel("Weekly Household Income", size=10)
 plt.suptitle("Male", size=16)    
@@ -99,6 +100,7 @@ for k in tqdm(range(K)):
     df = df[sorted(df.columns)]
     df.fillna(0, inplace=True) 
     sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", cbar_kws={'label': 'Probability'})
+    axs[k].set_yticklabels(["Inc1", "Inc2", "Inc3", "Inc4", "Inc5"], rotation=0)
     axs[k].set_title(panels[k]+score_legend[k], loc="left")
     axs[k].set_ylabel("Weekly Household Income", size=10)
 plt.suptitle("Female", size=16)    
@@ -405,21 +407,22 @@ g_ans = np.array([["Female", "Male"] for i in  range(len(m_ans))]).flatten()
 i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
 
 dfi = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
-dfi = dfi.sort_values("Income")
+dfi = dfi.sort_values(["Income", "Gender"])
 income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
               "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
-                 "Inc5":"£1,112 or more"}
+                 "Inc5":"£1,112+"}
 dfi.Income.replace(income_rep, inplace=True)
 
 df_ans = pd.DataFrame({"Mean":m_ans.flatten(), "SD":s_ans.flatten(), 
                        "Gender":g_ans, "Income":i_ans})
 df_ans.Income.replace(income_rep, inplace=True)
 
+colors = ['#556B2F', '#8E4585']
 fig, axs = plt.subplots(2,1, figsize=(8,8))
-sns.violinplot(dfi, x="Income", y="GAD_Total", hue="Gender", ax=axs[0])
+sns.violinplot(dfi, x="Income", y="GAD_Total", hue="Gender", palette=colors, ax=axs[0])
 axs[0].set_ylabel("Added Score")
 axs[0].set_title("A. Observed GAD-7 Total Scores", loc="left", size=16)
-sns.barplot(df_ans, x="Income", y="Mean", hue="Gender", ax=axs[1])
+sns.barplot(df_ans, x="Income", y="Mean", hue="Gender", palette=colors, ax=axs[1])
 for i, j in enumerate(df_ans['Income'].unique()):
     subset = df_ans[df_ans['Income'] == j]
     axs[1].errorbar(x=np.array([i-0.2, i+0.2]), y=subset["Mean"], 
