@@ -52,13 +52,13 @@ for wa in range(len(waves)):
     idata = az.from_netcdf("./idata_"+waves[wa]+"_depression_ordered.nc")
     
     # Extract parameters for the income model
-    alpha_w = az.extract(idata.posterior.alpha_w, num_samples=1000)["alpha_w"].values  # shape: (1000, 2) for 2 genders
-    bA_w = az.extract(idata.posterior.bA_w, num_samples=1000)["bA_w"].values        # a shape: (1000, 2) for 2 genders
-    kappa_income = az.extract(idata.posterior.kappa, num_samples=1000)["kappa"].values  # shape: (1000, 4) for 4 cutpoints (5 income levels)
-    kappa_phq = az.extract(idata.posterior.kappa2, num_samples=1000)["kappa2"].values #(9, 3, 1000)
-    alpha_y = az.extract(idata.posterior.alpha_y, num_samples=1000)["alpha_y"].values #(2, 9, 1000)
-    bA_y = az.extract(idata.posterior.bA_y, num_samples=1000)["bA_y"].values # c (2, 9, 1000)
-    bI = az.extract(idata.posterior.bI, num_samples=1000)["bI"].values # b (2, 9, 1000)
+    alpha_1 = az.extract(idata.posterior.alpha_1, num_samples=1000)["alpha_1"].values  # shape: (1000, 2) for 2 genders
+    a = az.extract(idata.posterior.a, num_samples=1000)["a"].values        # a shape: (1000, 2) for 2 genders
+    kappa_j = az.extract(idata.posterior.kappa_j, num_samples=1000)["kappa_j"].values  # shape: (1000, 4) for 4 cutpoints (5 income levels)
+    kappa_k = az.extract(idata.posterior.kappa_k, num_samples=1000)["kappa_k"].values #(9, 3, 1000)
+    alpha_2 = az.extract(idata.posterior.alpha_2, num_samples=1000)["alpha_2"].values #(2, 9, 1000)
+    c = az.extract(idata.posterior.c, num_samples=1000)["c"].values # c (2, 9, 1000)
+    b = az.extract(idata.posterior.b, num_samples=1000)["b"].values # b (2, 9, 1000)
     delta = az.extract(idata.posterior.delta, num_samples=1000)["delta"].values #(5, 1000)
     
     
@@ -79,7 +79,7 @@ for wa in range(len(waves)):
         Compute average marginal effect(AME) for age on income (ordered logistic)
         
         gender_idx: which gender to compute for (0 or 1)
-        beta_var: bA_w coefficient for age
+        beta_var: a coefficient for age
         var_values: standardised age (age_z) values to compute over
         """
         n_samples = 1000
@@ -88,7 +88,7 @@ for wa in range(len(waves)):
         
         # Get parameters for this gender
         beta = beta_var[gender_idx,:]  # shape: (1000,)
-        alpha = alpha_w[gender_idx,:]   # shape: (1000,)
+        alpha = alpha_1[gender_idx,:]   # shape: (1000,)
         
         ame_per_obs = np.zeros((n_samples, n_obs, n_categories))
         
@@ -100,18 +100,18 @@ for wa in range(len(waves)):
             for s in range(n_categories):
                 if s == 0:
                     # P(income=0) = Λ(κ₀ - η)
-                    term = logistic_pdf(kappa_income[0,:] - eta_val)
+                    term = logistic_pdf(kappa_j[0,:] - eta_val)
                     ame_per_obs[:, i, s] = -beta * term
                     
                 elif s == n_categories - 1:
                     # P(income=4) = 1 - Λ(κ₃ - η)
-                    term = logistic_pdf(kappa_income[3,:] - eta_val)
+                    term = logistic_pdf(kappa_j[3,:] - eta_val)
                     ame_per_obs[:, i, s] = beta * term
                     
                 else:
                     # P(income=s) = Λ(κ_s - η) - Λ(κ_{s-1} - η)
-                    term1 = logistic_pdf(kappa_income[s-1,:] - eta_val)
-                    term2 = logistic_pdf(kappa_income[s,:] - eta_val)
+                    term1 = logistic_pdf(kappa_j[s-1,:] - eta_val)
+                    term2 = logistic_pdf(kappa_j[s,:] - eta_val)
                     ame_per_obs[:, i, s] = beta * (term1 - term2)
         
         # Average across observations
@@ -125,7 +125,7 @@ for wa in range(len(waves)):
         gender_idx: which gender to compute for (0 or 1)
         question_idx: which question to compute for (0-8)  
         income_idx: which income level to hold constant (0-4)
-        beta_var: which beta coefficient to use (e.g., bA_y for age)
+        beta_var: which beta coefficient to use (e.g., c for age)
         var_values: values of the variable to compute AME for
         """
         n_samples = 1000
@@ -133,10 +133,10 @@ for wa in range(len(waves)):
         n_categories = 4  # 3 cutpoints for 4 score categories
         
         # Get the relevant parameters
-        kappa_q = kappa_phq[question_idx, :, :]  # shape: (3, 1000)
+        kappa_q = kappa_k[question_idx, :, :]  # shape: (3, 1000)
         beta = beta_var[gender_idx, question_idx, :]  # shape: (1000,)
-        alpha = alpha_y[gender_idx, question_idx, :]  # shape: (1000,)
-        bI_val = bI[gender_idx, question_idx, :]  # shape: (1000,)
+        alpha = alpha_2[gender_idx, question_idx, :]  # shape: (1000,)
+        b_val = b[gender_idx, question_idx, :]  # shape: (1000,)
         
         # Get the specific income effect (not average!)
         delta_cumsum = np.cumsum(delta, axis=0)  # shape: (5, 1000)
@@ -146,7 +146,7 @@ for wa in range(len(waves)):
         
         for i, x_val in enumerate(var_values):
             # Compute linear predictor for this observation with FIXED income
-            eta_val = alpha + beta * x_val + bI_val * income_effect  # shape: (1000,)
+            eta_val = alpha + beta * x_val + b_val * income_effect  # shape: (1000,)
             
             # Compute marginal effect for each category
             for s in range(n_categories):
@@ -188,10 +188,10 @@ for wa in range(len(waves)):
         n_obs = len(age_values)
         
         # Get parameters
-        kappa_q = kappa_phq[question_idx, :, :]  # shape: (3, 1000)
-        alpha = alpha_y[gender_idx, question_idx, :]  # shape: (1000,)
-        bA = bA_y[gender_idx, question_idx, :]  # shape: (1000,)
-        bI_val = bI[gender_idx, question_idx, :]  # shape: (1000,)
+        kappa_q = kappa_k[question_idx, :, :]  # shape: (3, 1000)
+        alpha = alpha_2[gender_idx, question_idx, :]  # shape: (1000,)
+        bA = c[gender_idx, question_idx, :]  # shape: (1000,)
+        b_val = b[gender_idx, question_idx, :]  # shape: (1000,)
         
         # Get income positions
         delta_cumsum = np.cumsum(delta, axis=0)  # shape: (5, 1000)
@@ -202,10 +202,10 @@ for wa in range(len(waves)):
         
         # for i, age_val in enumerate(age_values):
         # Compute linear predictors for both income levels
-        eta_j = alpha + bA * age_values.mean() + bI_val * income_j_pos  # shape: (1000,)
-        eta_k = alpha + bA * age_values.mean() + bI_val * income_k_pos  # shape: (1000,)
+        eta_j = alpha + bA * age_values.mean() + b_val * income_j_pos  # shape: (1000,)
+        eta_k = alpha + bA * age_values.mean() + b_val * income_k_pos  # shape: (1000,)
         
-        # Compute probability differences for all categories
+        # Compute probablity differences for all categories
         for s in range(4):
             if s == 0:
                 p_j = expit(kappa_q[0, :] - eta_j)
@@ -229,13 +229,13 @@ for wa in range(len(waves)):
     
     aoi_ames = np.zeros((2,5,1000))
     for g in tqdm(range(G)):
-        aoi_ames[g,:,:] = age_on_income(g, bA_w, age_z) / age.std() #recover age scale
+        aoi_ames[g,:,:] = age_on_income(g, a, age_z) / age.std() #recover age scale
         
     aop_ames = np.zeros((2,9,5,4,1000))
     for q in tqdm(range(Q)):
         for i in range(I):
             for g in range(G):
-                aop_ames[g,q,i,:,:] = age_on_phq(g, q, i, bA_y, age_z) / age.std() #recover age scale
+                aop_ames[g,q,i,:,:] = age_on_phq(g, q, i, c, age_z) / age.std() #recover age scale
                               
     iop_ades = np.zeros((4, 2, 9, 4, 1000))
     for k_idx, k in enumerate(tqdm(range(1, 5))):  # k_idx: 0,1,2,3 for Q2,Q3,Q4,Q5
@@ -253,7 +253,7 @@ for wa in range(len(waves)):
     ###################### Plot Figure #####################
     ########################################################
     
-    sex_levels = ['Male', 'Female']
+    sex_levels = data.Gender.unique()
     
     income_levels = ["£0-£300", "£301-£490", "£491-£740", "£741-£1,111", "£1,112+"]
     
@@ -261,17 +261,14 @@ for wa in range(len(waves)):
     
     score_levels = ["Not at all (0)", "Several days (1)", 
                     "More than half the days (2)", "Nearly every day (1)"]
-    
-    score_levels = ["Not at all (0)", "Several (1)", "More than half (2)", "Nearly every (1)"]
-    
-    sex_levels = ['Male', 'Female']
-    income_levels = ["£0-£300", "£301-£490", "£491-£740", "£741-£1,111", "£1,112+"]
+        
     income_comparisons = ["Inc1→Inc2", "Inc1→Inc3", "Inc1→Inc4", "Inc1→Inc5"]  # Comparisons from lowest income
+    
     score_levels = ["Score 0", "Score 1", "Score 2", "Score 3"]
     
     # Create the 2x2 figure
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    colors = ['#8E4585','#556B2F'] #plum for males, olive for females
+    colors = ['#556B2F', '#8E4585'] #plum for males, olive for females
     
     # Panel 1: Age effects on income (aoi_ames) - shape: (2, 5, 1000)
     aoi_summary = np.array([[
@@ -387,7 +384,6 @@ for wa in range(len(waves)):
     # Average over questions: (2, 4, 1000)
     iop_avg_questions2 = np.mean(iop_ades2, axis=2).swapaxes(0,1)
     
-    income_comparisons = ["Inc1→Inc2", "Inc1→Inc3", "Inc1→Inc4", "Inc1→Inc5"]
     x_pos = np.arange(4)
     width = 0.35
     
@@ -429,9 +425,9 @@ for wa in range(len(waves)):
     plt.show()
     
     ## compute in log-odds
-    a = bA_w
-    b = bI
-    c = bA_y
+    a = a
+    b = b
+    c = c
     mediator_effect = b
     direct_effect = c
     indirect_effect = a[:,None,:] * b

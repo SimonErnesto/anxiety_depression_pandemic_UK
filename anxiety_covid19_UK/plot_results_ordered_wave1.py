@@ -54,9 +54,9 @@ score_legend = ["Not at all (0)", "Several days (1)",
                 "More than half the days (2)", "Nearly every day (3)"]
 
 
-income_rep = {"Q1":"£0 - £300", "Q2":"£301 - £490",  
-              "Q3":"£491 - £740 ", "Q4":"£741 - £1,111", 
-                 "Q5":"£1,112 or more"}
+income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
+              "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
+                 "Inc5":"£1,112 or more"}
 
 data.Income.replace(income_rep, inplace=True)
 
@@ -295,7 +295,7 @@ for i in tqdm(range(Q)):
     
 
 #### High income
-dfh = data[data.Income=="Q5"]
+dfh = data[data.Income=="Inc5"]
 qs_ids = []
 for i in tqdm(dfh.Question.unique()):
     for k in dfh.Score.unique():
@@ -338,7 +338,7 @@ for i in tqdm(range(Q)):
 
 
 #### low income
-dfl = data[data.Income=="Q1"]
+dfl = data[data.Income=="Inc1"]
 qs_ids = []
 for i in tqdm(dfl.Question.unique()):
     for k in dfl.Score.unique():
@@ -388,11 +388,14 @@ for i in tqdm(data.Question.unique()):
         qj_df = q_df[q_df.Income==j]
         for g in data.Gender.unique():
             qg_df = qj_df[qj_df.Gender==g]
-            for k in qg_df.Score.unique():
+            for k in data.Score.unique():
                 qs_df = qg_df[qg_df.Score==k]
                 qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
                 # qs_ids.append(qg_da.mean(axis=0))
-                qs_ids.append(np.max(qs_da.T, axis=1)/len(qs_df))
+                try:
+                    qs_ids.append(np.max(qs_da.T, axis=1)/len(qs_df))
+                except:
+                    qs_ids.append(np.repeat(0, qs_da.shape[1]))
                 
 
 q_preds = np.array(qs_ids).reshape(7,5,2,4,y_pos.shape[2])
@@ -404,9 +407,9 @@ i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
 
 dfi = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 dfi = dfi.sort_values("Income")
-income_rep = {"Q1":"£0 - £300", "Q2":"£301 - £490",  
-              "Q3":"£491 - £740 ", "Q4":"£741 - £1,111", 
-                 "Q5":"£1,112 or more"}
+income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
+              "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
+                 "Inc5":"£1,112 or more"}
 dfi.Income.replace(income_rep, inplace=True)
 
 df_ans = pd.DataFrame({"Mean":m_ans.flatten(), "SD":s_ans.flatten(), 

@@ -53,13 +53,14 @@ for wa in range(len(waves)):
     
     
     # Extract parameters for the income model
-    alpha_w = az.extract(idata.posterior.alpha_w)["alpha_w"].values  # shape: (1000, 2) for 2 genders
-    bA_w = az.extract(idata.posterior.bA_w)["bA_w"].values        # shape: (1000, 2) for 2 genders
-    kappa_income = az.extract(idata.posterior.kappa)["kappa"].values  # shape: (1000, 4) for 4 cutpoints (5 income levels)
-    kappa = az.extract(idata.posterior.kappa2)["kappa2"].values #(9, 3, 1000)
-    alpha_y = az.extract(idata.posterior.alpha_y)["alpha_y"].values #(2, 9, 1000)
-    bA_y = az.extract(idata.posterior.bA_y)["bA_y"].values #(2, 9, 1000)
-    bI = az.extract(idata.posterior.bI)["bI"].values #(2, 9, 1000)
+    # Extract parameters for the income model
+    alpha_1 = az.extract(idata.posterior.alpha_1)["alpha_1"].values  # shape: (1000, 2) for 2 genders
+    a = az.extract(idata.posterior.a)["a"].values        # a shape: (1000, 2) for 2 genders
+    kappa_j = az.extract(idata.posterior.kappa_j)["kappa_j"].values  # shape: (1000, 4) for 4 cutpoints (5 income levels)
+    kappa_k = az.extract(idata.posterior.kappa_k)["kappa_k"].values #(9, 3, 1000)
+    alpha_2 = az.extract(idata.posterior.alpha_2)["alpha_2"].values #(2, 9, 1000)
+    c = az.extract(idata.posterior.c)["c"].values # c (2, 9, 1000)
+    b = az.extract(idata.posterior.b)["b"].values # b (2, 9, 1000)
     delta = az.extract(idata.posterior.delta)["delta"].values #(5, 1000)
     
     # Get posterior predictive samples
@@ -83,9 +84,9 @@ for wa in range(len(waves)):
     
     # Check the distribution of all coefficients
     all_betas = np.concatenate([
-        idata.posterior['alpha_y'].values.flatten(),
-        idata.posterior['bA_y'].values.flatten(), 
-        idata.posterior['bI'].values.flatten()
+        idata.posterior['alpha_2'].values.flatten(),
+        idata.posterior['c'].values.flatten(), 
+        idata.posterior['b'].values.flatten()
     ])
     
     

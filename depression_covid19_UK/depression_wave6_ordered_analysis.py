@@ -21,9 +21,6 @@ data = pd.concat(datas)
 
 data = data.sort_values(["Income", "Score"])
 
-# data = data[data.Question.isin(["Dep_2", "Dep_4"])]
-
-# data.reset_index(inplace=True, drop=True)
 
 Q = data.Question.unique()
 
@@ -52,49 +49,49 @@ with pm.Model(coords=coords) as mod:
     w = pm.Data("w", income, dims="index")
     y = pm.Data("y", scores, dims="index")
     
-    al_w_z = pm.Normal("al_w_z", 0, 1, dims=("gender")) 
-    al_w_l = pm.Normal("al_w_l", 0, 1)
-    al_w_s = pm.HalfNormal("al_w_s", 1)
-    alpha_w = pm.Deterministic("alpha_w", al_w_l + al_w_s*al_w_z) #intercept mediator α1s
+    al_1_z = pm.Normal("al_1_z", 0, 1, dims=("gender")) #intercept mediator
+    al_1_l = pm.Normal("al_1_l", 0, 1)
+    al_1_s = pm.HalfNormal("al_1_s", 1)
+    alpha_1 = pm.Deterministic("alpha_1", al_1_l + al_1_s*al_1_z)
     
-    al_y_z = pm.Normal("al_y_z", 0, 1, dims=("gender","question")) 
-    al_y_l = pm.Normal("al_y_l", 0, 1)
-    al_y_s = pm.HalfNormal("al_y_s", 1)
-    alpha_y = pm.Deterministic("alpha_y", al_y_l + al_y_s*al_y_z) #intercept mediator α2q,s
+    al_2_z = pm.Normal("al_2_z", 0, 1, dims=("gender","question")) #intercept total
+    al_2_l = pm.Normal("al_2_l", 0, 1)
+    al_2_s = pm.HalfNormal("al_2_s", 1)
+    alpha_2 = pm.Deterministic("alpha_2", al_2_l + al_2_s*al_2_z)
 
-    bA_w_z = pm.Normal("bA_w_z", 0, 1, dims=("gender")) 
-    bA_w_l = pm.Normal("bA_w_l", 0, 1)
-    bA_w_s = pm.HalfNormal("bA_w_s", 1)
-    bA_w = pm.Deterministic("bA_w", bA_w_l + bA_w_s*bA_w_z) #age slope mediator a
+    a_z = pm.Normal("a_z", 0, 1, dims=("gender")) #age slope mediator: a
+    a_l = pm.Normal("a_l", 0, 1)
+    a_s = pm.HalfNormal("a_s", 1)
+    a = pm.Deterministic("a", a_l + a_s*a_z)
     
-    bA_y_z = pm.Normal("bA_y_z", 0, 1, dims=("gender","question")) 
-    bA_y_l = pm.Normal("bA_y_l", 0, 1)
-    bA_y_s = pm.HalfNormal("bA_y_s", 1)
-    bA_y = pm.Deterministic("bA_y", bA_y_l + bA_y_s*bA_y_z) #age slope direct c
+    c_z = pm.Normal("c_z", 0, 1, dims=("gender","question")) #age slope direct: c
+    c_l = pm.Normal("c_l", 0, 1)
+    c_s = pm.HalfNormal("c_s", 1)
+    c = pm.Deterministic("c", c_l + c_s*c_z)
     
-    bI_z = pm.Normal("bI_z", 0, 1, dims=("gender","question")) 
-    bI_l = pm.Normal("bI_l", 0, 1)
-    bI_s = pm.HalfNormal("bI_s", 1)
-    bI = pm.Deterministic("bI", bI_l + bI_s*bI_z) #income slope direct b
+    b_z = pm.Normal("b_z", 0, 1, dims=("gender","question")) #income slope
+    b_l = pm.Normal("b_l", 0, 1)
+    b_s = pm.HalfNormal("b_s", 1)
+    b = pm.Deterministic("b", b_l + b_s*b_z)
     
-    kappa = pm.Normal("kappa", 0, 1,
+    kappa_j = pm.Normal("kappa_j", 0, 1,
     transform=pm.distributions.transforms.ordered, 
     shape=(income_levels- 1),  initval=np.arange(income_levels - 1)-2.5)
     
-    eta = alpha_w[g_idx] + bA_w[g_idx]*age_z 
+    theeta = alpha_1[g_idx] + a[g_idx]*age_z 
     
-    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa, eta=eta, observed=w, dims="index") #mediator
+    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa_j, eta=theeta, observed=w, dims="index") #mediator
     
     a = pt.ones(income_levels-1)
     delta_z = pm.Dirichlet("delta_z", a)
     delta = pm.Deterministic("delta", pm.math.concatenate([[0], delta_z]), dims="income")
     
-    kappa2 = pm.Normal('kappa2', mu=[1,2,3], sigma=0.5, dims=("question","cuts"),
+    kappa_k = pm.Normal('kappa_k', mu=[1,2,3], sigma=0.5, dims=("question","cuts"),
                       transform=pm.distributions.transforms.ordered) #cutpoints/difficulty
     
-    eta2 = alpha_y[g_idx, q_idx]  + bA_y[g_idx, q_idx]*age_z + bI[g_idx, q_idx]*delta.cumsum()[i_idx]
+    eta = alpha_2[g_idx, q_idx]  + c[g_idx, q_idx]*age_z + b[g_idx, q_idx]*delta.cumsum()[i_idx]
     
-    y = pm.OrderedLogistic('y_hat', cutpoints=kappa2[q_idx], eta=eta2, observed=scores, dims="index")
+    y = pm.OrderedLogistic('y_hat', cutpoints=kappa_k[q_idx], eta=eta, observed=scores, dims="index")
 
 with mod:
     ppc = pm.sample_prior_predictive(samples=100)
@@ -110,7 +107,8 @@ plt.tight_layout()
 plt.savefig("Wave6_prior_predictives_ordered.png", dpi=300)
  
 with mod:
-    idata = pm.sample(2000, tune=2000, chains=4, nuts_sampler="numpyro", target_accep=0.95)
+    idata = pm.sample(2000, tune=2000, chains=4, nuts_sampler="numpyro", 
+                      target_accep=0.99, random_seed=27)
 
 
 summ = az.summary(idata, hdi_prob=0.9)
