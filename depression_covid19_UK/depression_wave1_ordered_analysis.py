@@ -78,9 +78,9 @@ with pm.Model(coords=coords) as mod:
     transform=pm.distributions.transforms.ordered, 
     shape=(income_levels- 1),  initval=np.arange(income_levels - 1)-2.5)
     
-    theeta = alpha_1[g_idx] + a[g_idx]*age_z 
+    theta = alpha_1[g_idx] + a[g_idx]*age_z 
     
-    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa_j, eta=theeta, observed=w, dims="index") #mediator
+    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa_j, eta=theta, observed=w, dims="index") #mediator
     
     a = pt.ones(income_levels-1)
     delta_z = pm.Dirichlet("delta_z", a)

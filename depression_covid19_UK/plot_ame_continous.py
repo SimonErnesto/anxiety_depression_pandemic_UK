@@ -359,7 +359,7 @@ for k in range(S):
     ax1.set_title("Wave-1 Female (£0-£300 → £1,112+)")
     ax1.set_ylabel("APE (Inc5 - Inc1)")
     ax1.set_xlabel("Age (years)")
-    ax1.set_ylim(-0.12, 0.25)
+    ax1.set_ylim(-0.12, 0.3)
 
 ax2 = axes[0, 1]
 for k in range(S):
@@ -372,7 +372,7 @@ for k in range(S):
     ax2.set_title("Wave-1 Male (£0-£300 → £1,112+)")
     ax2.set_ylabel("APE (Inc5 - Inc1)")
     ax2.set_xlabel("Age (years)")
-    ax2.set_ylim(-0.12, 0.25)
+    ax2.set_ylim(-0.12, 0.3)
     
 ax3 = axes[1, 0]
 for k in range(S):
@@ -385,7 +385,7 @@ for k in range(S):
     ax3.set_title("Wave-6 Female (£0-£300 → £1,112+)")
     ax3.set_ylabel("APE (Inc5 - Inc1)")
     ax3.set_xlabel("Age (years)")
-    ax3.set_ylim(-0.12, 0.25)
+    ax3.set_ylim(-0.12, 0.3)
 
 ax4 = axes[1, 1]
 for k in range(S):
@@ -398,7 +398,7 @@ for k in range(S):
     ax4.set_title("Wave-6 Male (£0-£300 → £1,112+)")
     ax4.set_ylabel("APE (Inc5 - Inc1)")
     ax4.set_xlabel("Age (years)")
-    ax4.set_ylim(-0.12, 0.25)
+    ax4.set_ylim(-0.12, 0.3)
 
 plt.tight_layout()
 plt.savefig("depression_ades_continous_score.png", dpi=300)
@@ -521,7 +521,7 @@ for k in range(S):
     ax1.set_title("Wave-1 Female (Not at all(0))")
     ax1.set_ylabel("APE (Score = 0)")
     ax1.set_xlabel("Age (years)")
-    ax1.set_ylim(0, 0.2)
+    ax1.set_ylim(0, 0.3)
 
 ax2 = axes[0, 1]
 for k in range(S):
@@ -536,7 +536,7 @@ for k in range(S):
     ax2.set_title("Wave-1 Male (Not at all(0))")
     ax2.set_ylabel("APE (Score = 0)")
     ax2.set_xlabel("Age (years)")
-    ax2.set_ylim(0, 0.2)
+    ax2.set_ylim(0, 0.3)
     
 ax3 = axes[1, 0]
 for k in range(S):
@@ -551,7 +551,7 @@ for k in range(S):
     ax3.set_title("Wave-6 Female (Not at all(0))")
     ax3.set_ylabel("APE (Score = 0)")
     ax3.set_xlabel("Age (years)")
-    ax3.set_ylim(0, 0.25)
+    ax3.set_ylim(0, 0.3)
 
 ax4 = axes[1, 1]
 for k in range(S):
@@ -566,7 +566,7 @@ for k in range(S):
     ax4.set_title("Wave-6 Male (Not at all(0))")
     ax4.set_ylabel("APE (Score = 0)")
     ax4.set_xlabel("Age (years)")
-    ax4.set_ylim(0, 0.25)
+    ax4.set_ylim(0, 0.3)
 
 plt.tight_layout()
 plt.savefig("depression_ades_continous_income.png", dpi=300)

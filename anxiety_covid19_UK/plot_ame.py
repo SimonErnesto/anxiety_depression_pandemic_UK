@@ -68,10 +68,42 @@ for wa in range(len(waves)):
       return np.exp(x) / (1 + np.exp(x))**2
         
     def pordlog(a):
-        pa = logistic_pdf(a)
+        pa = expit(a)
         p_cum = np.concatenate(([0.], pa, [1.]))
         return p_cum[1:] - p_cum[:-1]
     
+    def calculate_income_probabilities(age_z, gender, kappa_j, alpha_1, a):
+        """Calculate income probabilities for each age and sex"""
+        results = []
+        
+        for gender_idx in range(len(gender)):  # 0 and 1 for sexes
+            ages = np.sort(np.unique(age))
+            ages_z = (ages - ages.mean()) / ages.std()
+            for i in tqdm(range(len(np.unique(ages)))):
+                # Calculate probabilities for each posterior sample
+                n_samples = alpha_1.shape[1]  # 1000 samples
+                probs_all = np.zeros((n_samples, 5))  # 5 income levels
+                
+                for s in range(n_samples):
+                    eta = alpha_1[gender_idx, s] + a[gender_idx, s] * ages_z[i]
+                    cuts = kappa_j[:, s] - eta  # kappa_j shape: (4, 1000)
+                    probs_all[s, :] = pordlog(cuts)
+                
+                # Calculate summary statistics for each income level
+                for income_level in range(5):
+                    prob_samples = probs_all[:, income_level]
+                    
+                    results.append({
+                        'age': ages[i],
+                        'sex': gender[gender_idx],
+                        'income_level': "Inc"+str(income_level+1),
+                        'mean': np.mean(prob_samples),
+                        'sd': np.std(prob_samples),
+                        'hdi_5%': az.hdi(prob_samples, hdi_prob=0.9)[0],
+                        'hdi_95%': az.hdi(prob_samples, hdi_prob=0.9)[1]
+                    })
+        
+        return pd.DataFrame(results)
     
     
     def age_on_income(gender_idx, beta_var, var_values):
@@ -227,6 +259,12 @@ for wa in range(len(waves)):
     #################### Create Arrays for Plotting ####################
     ####################################################################
     
+    # Calculate probabilities and create dataframe
+    df_income_probs = calculate_income_probabilities(age_z, data.Gender.unique(), kappa_j, alpha_1, a)
+    # Save to CSV
+    df_income_probs.to_csv(wave+"_income_probabilities_summary.csv", index=False)
+    
+    
     aoi_ames = np.zeros((2,5,1000))
     for g in tqdm(range(G)):
         aoi_ames[g,:,:] = age_on_income(g, a, age_z) / age.std() #recover age scale
@@ -327,7 +365,7 @@ for wa in range(len(waves)):
     
     ax2.set_xlabel('GAD-7 Score')
     ax2.set_ylabel('AME of Age on GAD-7 Score')
-    ax2.set_title('B. Age Effects on Depression Scores\n(Averaged over Questions & Income)')
+    ax2.set_title('B. Age Effects on Anxiety Scores\n(Averaged over Questions & Income)')
     ax2.set_xticks(x_pos)
     ax2.set_xticklabels(score_levels, rotation=45, ha='right')
     ax2.legend()
@@ -514,5 +552,10 @@ for wa in range(len(waves)):
     effects_ave["HDI_95"] = np.array([med_hdi[1], dir_hdi[1], ind_hdi[1], tot_hdi[1]]).flatten()
     
     effects_ave.to_csv(wave+"_average_effects_summary.csv", index=False)
+
+
+
+
     
+
     
