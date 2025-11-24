@@ -470,18 +470,107 @@ plt.close()
 
 
 
-#save summary by sex
-sex_summ = pd.concat([female,male])
-sex_summ = sex_summ.round(2)
-sex_summ = sex_summ.drop(["s_0","s_1","s_2","s_3"], axis=1)
-sex_summ["90%HDI_0"] = sex_summ.apply(lambda row: f"{row['h5_0']}, {row['h95_0']}", axis=1)
-sex_summ["90%HDI_1"] = sex_summ.apply(lambda row: f"{row['h5_1']}, {row['h95_1']}", axis=1)
-sex_summ["90%HDI_2"] = sex_summ.apply(lambda row: f"{row['h5_2']}, {row['h95_2']}", axis=1)
-sex_summ["90%HDI_3"] = sex_summ.apply(lambda row: f"{row['h5_3']}, {row['h95_3']}", axis=1)
-sex_summ = sex_summ[sex_summ.Score==0]
-sex_summ["Gender"] = list(np.repeat("Female", 5)) + list(np.repeat("Male", 5))
-sex_summ = sex_summ.drop(["h5_0","h5_1","h5_2","h5_3", "h95_0","h95_1","h95_2","h95_3"], axis=1)
-sex_summ = sex_summ.drop(["Dep_Total","Score"], axis=1)
-custom_order = ["Gender", "Income", "m_0","90%HDI_0", "m_1","90%HDI_1","m_2", "90%HDI_2","m_3","90%HDI_3"]
-sex_summ = sex_summ.loc[:, custom_order]
-sex_summ.to_csv("summay_by_sex_depression_wave1.csv", index=False)
+######## Full Summary
+data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
+
+datas = []
+for d in data.columns[9:]:
+    df = data.drop(data.columns[9:], axis=1)
+    df["Score"] = data[d]
+    df["Question"] = np.repeat(d, len(df))
+    datas.append(df)
+
+data = pd.concat(datas)
+
+data = data.sort_values(["Income", "Score"])
+
+data.reset_index(inplace=True)
+
+aves_summ = {"Score":[], "Gender":[], "Income":[], "Age-range":[],
+                          "Mean":[], "SD":[], "HDI_5%":[], "HDI_95%":[]}
+
+
+for k,r in tqdm(enumerate(["18-34", "35-49", "50-64", "65-83"])):
+    if k == 0:
+        a,b =[18,34] 
+    if k == 1:
+        a,b =[35,49] 
+    if k == 0:
+        a,b =[50,64]
+    if k == 0:
+        a,b =[65,83] 
+        
+    for i, j in enumerate(data.Income.unique()):
+        m_inc_id = data[(data.Gender=="Male") & (data.Income==j) 
+                        & (data.Age_year>a) & (data.Age_year<b)].index.values
+        
+        f_inc_id = data[(data.Gender=="Female") & (data.Income==j) 
+                        & (data.Age_year>a) & (data.Age_year<b)].index.values
+        
+        yp_f = y_probs[f_inc_id].mean(axis=0)
+        yp_m = y_probs[m_inc_id].mean(axis=0)
+        
+        for s in data.Score.unique():
+            aves_summ["Score"].append("S"+str(s))
+            aves_summ["Gender"].append("Female")
+            aves_summ["Income"].append(j)
+            aves_summ["Age-range"].append(r)
+            aves_summ["Mean"].append(yp_f[s].mean())
+            aves_summ["SD"].append(yp_f[s].std())
+            aves_summ["HDI_5%"].append(az.hdi(yp_f[s], hdi_prob=0.9)[0])
+            aves_summ["HDI_95%"].append(az.hdi(yp_f[s], hdi_prob=0.9)[1])
+        for s in data.Score.unique():
+            aves_summ["Score"].append("S"+str(s))
+            aves_summ["Gender"].append("Male")
+            aves_summ["Income"].append(j)
+            aves_summ["Age-range"].append(r)
+            aves_summ["Mean"].append(yp_m[s].mean())
+            aves_summ["SD"].append(yp_m[s].std())
+            aves_summ["HDI_5%"].append(az.hdi(yp_m[s], hdi_prob=0.9)[0])
+            aves_summ["HDI_95%"].append(az.hdi(yp_m[s], hdi_prob=0.9)[1])
+    
+
+for i, j in tqdm(enumerate(data.Income.unique())):
+    m_inc_id = data[(data.Gender=="Male") & (data.Income==j)].index.values
+    f_inc_id = data[(data.Gender=="Female") & (data.Income==j)].index.values
+    
+    yp_f = y_probs[f_inc_id].mean(axis=0)
+    yp_m = y_probs[m_inc_id].mean(axis=0)
+    
+    for s in data.Score.unique():
+        aves_summ["Score"].append("S"+str(s))
+        aves_summ["Gender"].append("Female")
+        aves_summ["Income"].append(j)
+        aves_summ["Age-range"].append("Average_Age")
+        aves_summ["Mean"].append(yp_f[s].mean())
+        aves_summ["SD"].append(yp_f[s].std())
+        aves_summ["HDI_5%"].append(az.hdi(yp_f[s], hdi_prob=0.9)[0])
+        aves_summ["HDI_95%"].append(az.hdi(yp_f[s], hdi_prob=0.9)[1])
+    for s in data.Score.unique():
+        aves_summ["Score"].append("S"+str(s))
+        aves_summ["Gender"].append("Male")
+        aves_summ["Income"].append(j)
+        aves_summ["Age-range"].append("Average_Age")
+        aves_summ["Mean"].append(yp_m[s].mean())
+        aves_summ["SD"].append(yp_m[s].std())
+        aves_summ["HDI_5%"].append(az.hdi(yp_m[s], hdi_prob=0.9)[0])
+        aves_summ["HDI_95%"].append(az.hdi(yp_m[s], hdi_prob=0.9)[1])
+    
+
+for i, g in enumerate(data.Gender.unique()):
+    g_id = data[data.Gender==g].index.values
+    yp_g = y_probs[g_id].mean(axis=0)
+    for s in data.Score.unique():
+        aves_summ["Score"].append("S"+str(s))
+        aves_summ["Gender"].append(g)
+        aves_summ["Income"].append("Average_Income")
+        aves_summ["Age-range"].append("Average_Age")
+        aves_summ["Mean"].append(yp_g[s].mean())
+        aves_summ["SD"].append(yp_g[s].std())
+        aves_summ["HDI_5%"].append(az.hdi(yp_g[s], hdi_prob=0.9)[0])
+        aves_summ["HDI_95%"].append(az.hdi(yp_g[s], hdi_prob=0.9)[1])
+    
+
+aves_summ = pd.DataFrame(aves_summ)  
+    
+aves_summ.to_csv("Wave1_summary_full.csv", index=False)    
