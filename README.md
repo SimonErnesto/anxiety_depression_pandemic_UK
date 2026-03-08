@@ -45,9 +45,9 @@ $$\beta_{g,q,1} \leq \beta_{g,q,2} \leq ... \leq \beta_{g,q,7}$$
 This is implemented via a cumulative parameterization using a Dirichlet prior on the increments between levels.
 
 #### Mediation Effects
-- **Indirect effect**: $\text{IE}_{g,q,k} = a_g \times \beta_{g,q,k}$
+- **Indirect effect**: $IE_{g,q,k} = a_g \times \beta_{g,q,k}$
 - **Direct effect**: $c_{g,q}$
-- **Total effect**: $\text{TE}_{g,q,k} = c_{g,q} + a_g \times \beta_{g,q,k}$
+- **Total effect**: $TE_{g,q,k} = c_{g,q} + a_g \times \beta_{g,q,k}$
 
 ### Priors
 All parameters are assigned weakly informative priors, with hierarchical structure for intercepts and slopes using non-centered parameterization:
