@@ -238,7 +238,7 @@ for i in range(I):
 
 plt.tight_layout()
 # plt.title("GAD-7 Score=0 Probabilities")
-plt.savefig("danxiety_effects_continous.png", dpi=300)
+plt.savefig("anxiety_effects_continous.png", dpi=300)
 plt.show()
 plt.close()
 
@@ -518,8 +518,8 @@ for k in range(S):
     ax1.fill_between(ages[0], m-s, m+s, color=colors[k], alpha=0.2)
     ax1.legend()
     ax1.grid(alpha=0.3)
-    ax1.set_title('Wave-1 Female: "Not at all(0)"')
-    ax1.set_ylabel("APE (Score = 0)")
+    ax1.set_title('Wave-1 Female\nGAD-7 Score = "Not at all(0)"')
+    ax1.set_ylabel("Probability of reporting no symptoms")
     ax1.set_xlabel("Age (years)")
     ax1.set_ylim(0, 0.3)
 
@@ -533,8 +533,8 @@ for k in range(S):
     ax2.fill_between(ages[0], m-s, m+s, color=colors[k], alpha=0.2)
     ax2.legend()
     ax2.grid(alpha=0.3)
-    ax2.set_title('Wave-1 Male: "Not at all(0)"')
-    ax2.set_ylabel("APE (Score = 0)")
+    ax2.set_title('Wave-1 Male\nGAD-7 Score = "Not at all(0)"')
+    ax2.set_ylabel("Probability of reporting no symptoms")
     ax2.set_xlabel("Age (years)")
     ax2.set_ylim(0, 0.3)
     
@@ -548,8 +548,8 @@ for k in range(S):
     ax3.fill_between(ages[1], m-s, m+s, color=colors[k], alpha=0.2)
     ax3.legend()
     ax3.grid(alpha=0.3)
-    ax3.set_title('Wave-6 Female: "Not at all(0)"')
-    ax3.set_ylabel("APE (Score = 0)")
+    ax3.set_title('Wave-6 Female\nGAD-7 Score = "Not at all(0)"')
+    ax3.set_ylabel("Probability of reporting no symptoms")
     ax3.set_xlabel("Age (years)")
     ax3.set_ylim(0, 0.3)
 
@@ -563,8 +563,8 @@ for k in range(S):
     ax4.fill_between(ages[1], m-s, m+s, color=colors[k], alpha=0.2)
     ax4.legend()
     ax4.grid(alpha=0.3)
-    ax4.set_title('Wave-6 Male: "Not at all(0)"')
-    ax4.set_ylabel("APE (Score = 0)")
+    ax4.set_title('Wave-6 Male\nGAD-7 Score = "Not at all(0)"')
+    ax4.set_ylabel("Probability of reporting no symptoms")
     ax4.set_xlabel("Age (years)")
     ax4.set_ylim(0, 0.3)
 
