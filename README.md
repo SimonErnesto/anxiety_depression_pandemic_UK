@@ -85,6 +85,8 @@ The model is implemented in PyMC using:
 - Non-centered parameterization for hierarchical effects
 - Deterministic calculations of indirect and total effects
 
+Debugging and optimisation of plotting scripts was supported with DeepSeek-V3, the authors reviewed and edited the content for final version.
+
 ## Requirements
 
 - Python 3.8+
