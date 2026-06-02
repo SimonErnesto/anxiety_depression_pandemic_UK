@@ -82,8 +82,8 @@ data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
 idata = az.from_netcdf("./idata_wave1_depression_ordered.nc")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -98,11 +98,11 @@ age = data.Age_year.values
 age_z = (age - age.mean()) / age.std()
     
 S = len(data.Score.unique())
-G = len(data.Gender.unique())
+G = len(data.Sex.unique())
 I = len(data.Income.unique())
 Q = len(data.Question.unique())
 
-g_idx = pd.factorize(data.Gender)[0]
+g_idx = data.Sex.values
 i_idx = pd.factorize(data.Income)[0]
 q_idx = pd.factorize(data.Question)[0]
     
@@ -130,8 +130,8 @@ data = pd.read_csv("./data/depression_covid19_UK_wave6_data.csv")
 idata = az.from_netcdf("./idata_wave6_depression_ordered.nc")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -150,7 +150,7 @@ G = len(data.Gender.unique())
 I = len(data.Income.unique())
 Q = len(data.Question.unique())
 
-g_idx = pd.factorize(data.Gender)[0]
+g_idx = data.Sex.values
 i_idx = pd.factorize(data.Income)[0]
 q_idx = pd.factorize(data.Question)[0]
     
@@ -244,8 +244,8 @@ plt.close()
 
 
 ######################### Income Plotting ##################################
-iop_ades_wave1 = np.zeros((4, 2, 4, 63, 1000))
-iop_ades_wave2 = np.zeros((4, 2, 4, 63, 1000))
+iop_ades_wave1 = np.zeros((4, 2, 4, 64, 1000))
+iop_ades_wave2 = np.zeros((4, 2, 4, 64, 1000))
 iops = [iop_ades_wave1, iop_ades_wave2]
 waves = ["wave1", "wave6"]
 ages = []
@@ -316,7 +316,7 @@ for w in range(2):
         return ade_per_obs  # shape: (4,1000)
         
     
-    age_values = np.arange(age.min(), age.max())[:63]
+    age_values = np.arange(age.min(), age.max())[:64]
     ages.append(age_values)
     age_values = np.unique(age_z)
     #age_values = (age_values - age_values.mean()) / age_values.std()
@@ -407,8 +407,8 @@ plt.close()
 
 
 
-iop_ades_wave1 = np.zeros((4, 2, 4, 63, 1000))
-iop_ades_wave2 = np.zeros((4, 2, 4, 63, 1000))
+iop_ades_wave1 = np.zeros((4, 2, 4, 64, 1000))
+iop_ades_wave2 = np.zeros((4, 2, 4, 64, 1000))
 iops = [iop_ades_wave1, iop_ades_wave2]
 waves = ["wave1", "wave6"]
 ages = []
@@ -478,7 +478,7 @@ for w in range(2):
         # Average across observations
         return ade_per_obs  # shape: (4,1000)
         
-    age_values = np.arange(age.min(), age.max())[:63]
+    age_values = np.arange(age.min(), age.max())[:64]
     ages.append(age_values)
     age_values = np.unique(age_z)
     

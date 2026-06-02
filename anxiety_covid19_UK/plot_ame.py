@@ -25,8 +25,8 @@ for wa in range(len(waves)):
     wave = wave.replace("W", "Wave")
     
     datas = []
-    for d in data.columns[9:]:
-        df = data.drop(data.columns[9:], axis=1)
+    for d in data.columns[14:]:
+        df = data.drop(data.columns[14:], axis=1)
         df["Score"] = data[d]
         df["Question"] = np.repeat(d, len(df))
         datas.append(df)
@@ -45,7 +45,7 @@ for wa in range(len(waves)):
     I = len(data.Income.unique())
     Q = len(data.Question.unique())
     
-    g_idx = pd.factorize(data.Gender)[0]
+    g_idx = data.Sex.values
     i_idx = pd.factorize(data.Income)[0]
     q_idx = pd.factorize(data.Question)[0]
     
@@ -260,7 +260,7 @@ for wa in range(len(waves)):
     ####################################################################
     
     # Calculate probabilities and create dataframe
-    df_income_probs = calculate_income_probabilities(age_z, data.Gender.unique(), kappa_j, alpha_1, a)
+    df_income_probs = calculate_income_probabilities(age_z, ["Female","Male"], kappa_j, alpha_1, a)
     # Save to CSV
     df_income_probs.to_csv(wave+"_income_probabilities_summary.csv", index=False)
     
@@ -291,7 +291,7 @@ for wa in range(len(waves)):
     ###################### Plot Figure #####################
     ########################################################
     
-    sex_levels = data.Gender.unique()
+    sex_levels = ["Female", "Male"]
     
     income_levels = ["£0-£300", "£301-£490", "£491-£740", "£741-£1,111", "£1,112+"]
     

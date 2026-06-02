@@ -25,8 +25,8 @@ for wa in range(len(waves)):
     wave = wave.replace("W", "Wave")
     
     datas = []
-    for d in data.columns[9:]:
-        df = data.drop(data.columns[9:], axis=1)
+    for d in data.columns[14:]:
+        df = data.drop(data.columns[14:], axis=1)
         df["Score"] = data[d]
         df["Question"] = np.repeat(d, len(df))
         datas.append(df)

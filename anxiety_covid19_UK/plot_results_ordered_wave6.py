@@ -16,8 +16,8 @@ sns.set(style="whitegrid", font="DeJavu Serif")
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -64,10 +64,14 @@ data["Question"] = data["Question"].str.replace("GAD_","Q")
 male = data[data.Gender=="Male"]
 female = data[data.Gender=="Female"]
 
-male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 
+                  'Date', 'Income_2019','Education', 'Ethnicity', 'Education_level',
+                         'Ethnic_category'], axis=1)
 male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
-female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 
+                  'Date', 'Income_2019','Education', 'Ethnicity', 'Education_level',
+                         'Ethnic_category'], axis=1)
 female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
 
@@ -154,8 +158,8 @@ plt.show()
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -442,8 +446,8 @@ plt.close()
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

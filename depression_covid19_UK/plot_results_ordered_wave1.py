@@ -17,8 +17,8 @@ sns.set(style="whitegrid", font="DeJavu Serif")
 data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -31,11 +31,11 @@ age = data.Age_year.values
 age_z = (age - age.mean()) / age.std()
 
 S = len(data.Score.unique())
-G = len(data.Gender.unique())
+G = data.Sex.values
 I = len(data.Income.unique())
 Q = len(data.Question.unique())
 
-g_idx = pd.factorize(data.Gender)[0]
+g_idx = data.Sex.values
 i_idx = pd.factorize(data.Income)[0]
 q_idx = pd.factorize(data.Question)[0]
 
@@ -90,10 +90,14 @@ data["Question"] = data["Question"].str.replace("Dep_","Q")
 male = data[data.Gender=="Male"]
 female = data[data.Gender=="Female"]
 
-male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019',
+                  'Education', 'Ethnicity', 'Education_level',
+                  'Ethnic_category'], axis=1)
 male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
-female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019'], axis=1)
+female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 
+                      'Income_2019', 'Education', 'Ethnicity', 'Education_level',
+                      'Ethnic_category'], axis=1)
 female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
 
@@ -179,8 +183,8 @@ plt.show()
 
 data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -413,7 +417,7 @@ for i in tqdm(data.Question.unique()):
     q_df = data[data.Question==i]
     for j in data.Income.unique():
         qj_df = q_df[q_df.Income==j]
-        for g in data.Gender.unique():
+        for g in ["Female", "Male"]:
             qg_df = qj_df[qj_df.Gender==g]
             for k in qg_df.Score.unique():
                 qs_df = qg_df[qg_df.Score==k]
@@ -474,8 +478,8 @@ plt.close()
 data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
 
 datas = []
-for d in data.columns[9:]:
-    df = data.drop(data.columns[9:], axis=1)
+for d in data.columns[14:]:
+    df = data.drop(data.columns[14:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
