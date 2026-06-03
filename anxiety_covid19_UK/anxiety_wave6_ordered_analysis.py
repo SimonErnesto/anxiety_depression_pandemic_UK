@@ -6,132 +6,99 @@ import pandas as pd
 import pytensor.tensor as pt
 import matplotlib.pyplot as plt
 
-np.random.seed(27) # set numpy random seed
+np.random.seed(27)
+
+data_w1 = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+data_w1 = data_w1[data_w1.Ethnicity==3]
+#Restrict data to participants without PTSD
+data_w1 = data_w1[data_w1.Residence==0]
+# #Restrict data to urban population
+data_w1 = data_w1[data_w1.Trauma==0]
 
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
+#restrict population to the majority ethnicity only
+data = data[data.Ethnicity==3]
+#Restrict data to participants without PTSD
+data = data[data.Residence==0]
+# #Restrict data to urban population
+data = data[data.Trauma==0]
 
+data = data[data.pid.isin(data_w1.pid.unique())]
+
+# Reshape data
 datas = []
-for d in data.columns[14:]:
-    df = data.drop(data.columns[14:], axis=1)
+for d in data.columns[19:]:
+    df = data.drop(data.columns[19:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
-
 data = pd.concat(datas)
 
-data = data.sort_values(["Income", "Score"])
-
+data = data.sort_values("Score")
 data.reset_index(inplace=True, drop=True)
 
-Q = data.Question.unique()
 
-age = data.Age_year.values
-age_z = (age - age.mean()) / age.std()
-gender = data.Gender.values
-income = pd.factorize(data.Income.values)[0]
-scores = data.Score.values
+g_idx = data.Sex.values
+i_idx = data["Income"].replace({'Inc1':0, 'Inc2':1, 'Inc3':2, 'Inc4':3, 'Inc5':4})
+q_idx = data["Question"].replace({'GAD_1':0, 'GAD_2':1, 'GAD_3':2, 
+                                  'GAD_4':3, 'GAD_5':4, 'GAD_6':5, 'GAD_7':6})
 
-g_idx = data.Sex.values #sex is the correct coding, Gender are the corrrect labels
-i_idx = pd.factorize(data.Income)[0]
-q_idx = pd.factorize(data.Question)[0]
 
-e1_idx = data.Ethnic_category.values
-e2_idx = data.Education_level.values
-e2_levels = len(data.Education_level.unique())
+confounder_cols_1 = ["Education", "Employment", "Children"]
 
-income_levels = len(data.Income.unique())
+confounder_cols_2 = ["Education", "Employment", "Children", 
+                     "Religion", "Loneliness", "Politics"]
 
-score_levels = len(data.Score.unique())
+# Create the matrices X_1 and X_2
+X_1 = data[confounder_cols_1].values.astype(float)
+X_2 = data[confounder_cols_2].values.astype(float)
 
-coords = {"ethnicity": data.Ethnicity.unique(),
-          "education": data.Education.unique(),
-          "gender": ["Female","Male"],
-          "income": data.Income.unique(),
-          "question": data.Question.unique(),
-          "cuts": np.arange(score_levels-1), 
-          "index": data.index.values,}
+coords = {
+    "gender": ["Female", "Male"],
+    "income": data.Income.unique(),
+    "question": data.Question.unique(),
+    "cuts": np.arange(4 - 1),
+    "index": data.index.values,
+}
 
 with pm.Model(coords=coords) as mod:
+    w = pm.Data("w", i_idx, dims="index")
+    y = pm.Data("y", data.Score.values, dims="index")
+    age_z = pm.Data("age_z", (data.Age_year.values - data.Age_year.mean()) / data.Age_year.std(), dims="index")
     
-    w = pm.Data("w", income, dims="index")
-    y = pm.Data("y", scores, dims="index")
-    
-    ###confounder adjustment
-    # mediator Ethnicity (non-centered)
-    sigma_e1_med = pm.HalfNormal("sigma_e1_med", 0.25)
-    e1_med_raw = pm.Normal("e1_med_raw", 0, 1, dims="ethnicity")
-    e1_med = pm.Deterministic("e1_med", sigma_e1_med * e1_med_raw)
-    
-    # mediator Education (non-centered)  
-    sigma_e2_med = pm.HalfNormal("sigma_e2_med", 0.25)
-    e2_med_raw = pm.Normal("e2_med_raw", 0, 1, dims="education")
-    e2_med = pm.Deterministic("e2_med", sigma_e2_med * e2_med_raw)
-    
-    # outcome Ethnicity (non-centered)
-    sigma_e1_out = pm.HalfNormal("sigma_e1_out", 0.25)
-    e1_out_raw = pm.Normal("e1_out_raw", 0, 1, dims="ethnicity")
-    e1_out = pm.Deterministic("e1_out", sigma_e1_out * e1_out_raw)
-    
-    # outcome Education (non-centered)
-    sigma_e2_out = pm.HalfNormal("sigma_e2_out", 0.25)
-    e2_out_raw = pm.Normal("e2_out_raw", 0, 1, dims="education")
-    e2_out = pm.Deterministic("e2_out", sigma_e2_out * e2_out_raw)
-    
-    ###Main parameters
-    # al_1_z = pm.Normal("al_1_z", 0, 0.5, dims=("gender")) #intercept mediator
-    # al_1_l = pm.Normal("al_1_l", 0, 0.5)
-    # al_1_s = pm.HalfNormal("al_1_s", 1)
-    # alpha_1 = pm.Deterministic("alpha_1", al_1_l + al_1_s*al_1_z)
-    
-    # al_2_z = pm.Normal("al_2_z", 0, 0.5, dims=("gender","question")) #intercept total
-    # al_2_l = pm.Normal("al_2_l", 0, 0.5)
-    # al_2_s = pm.HalfNormal("al_2_s", 1)
-    # alpha_2 = pm.Deterministic("alpha_2", al_2_l + al_2_s*al_2_z)
-
-    # a_z = pm.Normal("a_z", 0, 0.5, dims=("gender")) #age slope mediator: a
-    # a_l = pm.Normal("a_l", 0, 0.5)
-    # a_s = pm.HalfNormal("a_s", 1)
-    # a = pm.Deterministic("a", a_l + a_s*a_z)
-    
-    # c_z = pm.Normal("c_z", 0, 0.5, dims=("gender","question")) #age slope direct: c
-    # c_l = pm.Normal("c_l", 0, 0.5)
-    # c_s = pm.HalfNormal("c_s", 1)
-    # c = pm.Deterministic("c", c_l + c_s*c_z)
-    
-    # b_z = pm.Normal("b_z", 0, 0.5, dims=("gender","question")) #income slope
-    # b_l = pm.Normal("b_l", 0, 0.5)
-    # b_s = pm.HalfNormal("b_s", 1)
-    # b = pm.Deterministic("b", b_l + b_s*b_z)
-    
-    ###Main parameters
-    # Intercepts (Flat, no hierarchical sigma)
+    ### Main parameters
     alpha_1 = pm.Normal("alpha_1", 0, 1, dims="gender")
     alpha_2 = pm.Normal("alpha_2", 0, 1, dims=("gender", "question"))
-    
-    # Age slopes
     a = pm.Normal("a", 0, 1, dims="gender")
     c = pm.Normal("c", 0, 1, dims=("gender", "question"))
-    
-    # Income slope
     b = pm.Normal("b", 0, 1, dims=("gender", "question"))
     
-    kappa_j = pm.Normal("kappa_j", mu=0, sigma=0.5,
-    transform=pm.distributions.transforms.ordered, 
-    shape=(income_levels- 1),  initval=np.arange(income_levels - 1)-2.5)
+    # Outcome coefficients
+    ### Confounder Vectors (One coefficient per confounder)
+    U_1 = pm.Normal("U_1", mu=0, sigma=0.25, shape=len(confounder_cols_1)) #mediator confs
+    U_2 = pm.Normal("U_2", mu=0, sigma=0.25, shape=len(confounder_cols_2)) #outcome confs
     
-    theta = alpha_1[g_idx] + a[g_idx]*age_z + e1_med[e1_idx] + e2_med[e2_idx]
+    ### Mediator Model (Income)
+    kappa_j = pm.Normal("kappa_j", mu=[0.25, 0.5, 1,2], sigma=0.5,
+        transform=pm.distributions.transforms.ordered,
+        shape=(len(data.Income.unique()) - 1), initval=np.arange(len(data.Income.unique()) - 1) - 2.5)
     
-    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa_j, eta=theta, observed=w, dims="index") #mediator
+    theta = (alpha_1[g_idx] + a[g_idx] * age_z + pt.dot(X_1, U_1))
+             
+    w_hat = pm.OrderedLogistic("w_hat", cutpoints=kappa_j, eta=theta, observed=w, dims="index")
     
-    delta_z = pm.Dirichlet("delta_z", pt.ones(income_levels-1))
+    ### Outcome Model (Mental Health)
+    delta_z = pm.Dirichlet("delta_z", pt.ones(len(data.Income.unique()) - 1))
     delta = pm.Deterministic("delta", pm.math.concatenate([[0], delta_z]), dims="income")
     
-    kappa_k = pm.Normal('kappa_k', mu=[1,2,3], sigma=0.5, dims=("question","cuts"),
-                      transform=pm.distributions.transforms.ordered) #cutpoints/difficulty
+    kappa_k = pm.Normal('kappa_k', mu=[1, 2, 3], sigma=0.5, dims=("question", "cuts"),
+                      transform=pm.distributions.transforms.ordered)
     
-    eta = alpha_2[g_idx, q_idx]  + c[g_idx, q_idx]*age_z + b[g_idx, q_idx]*delta.cumsum()[i_idx] + e1_out[e1_idx] + e2_out[e2_idx]
-    
-    y = pm.OrderedLogistic('y_hat', cutpoints=kappa_k[q_idx], eta=eta, observed=scores, dims="index")
+    eta = (alpha_2[g_idx, q_idx] + c[g_idx, q_idx] * age_z + 
+           b[g_idx, q_idx] * delta.cumsum()[i_idx] + pt.dot(X_2, U_2))
+           
+    y_hat = pm.OrderedLogistic('y_hat', cutpoints=kappa_k[q_idx], eta=eta, observed=y, dims="index")
 
 with mod:
     ppc = pm.sample_prior_predictive(samples=100)
@@ -141,13 +108,14 @@ ax1,ax2 = az.plot_ppc(ppc, group="prior")
 ax1.set_xlabel("ŵ", size=14)
 ax2.set_xlabel("ŷ", size=14)
 ax1.set_title("Weekly Household Income", size=14)
-ax2.set_title("PHQ-9 Score", size=14)
+ax2.set_title("GAD-7 Score", size=14)
 plt.suptitle("Wave-6 Prior Predictive Checks Anxiety", size=18)
 plt.tight_layout()
 plt.savefig("Wave6_prior_predictives_ordered.png", dpi=300)
 
+
 with mod:
-    idata = pm.sample(2000, tune=2000, chains=4, nuts_sampler="nutpie", 
+    idata = pm.sample(1000, tune=1000, chains=4, nuts_sampler="nutpie", 
                       target_accep=0.95, random_seed=27)
 
 
