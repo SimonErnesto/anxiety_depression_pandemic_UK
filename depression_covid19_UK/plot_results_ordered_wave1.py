@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import seaborn as sns
 
-
 plt.rcParams['font.family'] = "DeJavu Serif"
 plt.rcParams['font.serif'] = "Cambria Math"
 plt.rcParams['font.size'] = 12
@@ -14,11 +13,18 @@ plt.rcParams['font.size'] = 12
 sns.set(style="whitegrid", font="DeJavu Serif")
 # sns.set_style("whitegrid")
 
-data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
+data = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+data = data[data.Ethnicity==3]
+#Restrict data to participants without PTSD
+data = data[data.Residence==0]
+# #Restrict data to urban population
+data = data[data.Trauma==0]
+
 
 datas = []
-for d in data.columns[14:]:
-    df = data.drop(data.columns[14:], axis=1)
+for d in data.columns[19:]:
+    df = data.drop(data.columns[19:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -27,20 +33,9 @@ data = pd.concat(datas)
 
 data = data.sort_values(["Income", "Score"])
 
-age = data.Age_year.values
-age_z = (age - age.mean()) / age.std()
 
-S = len(data.Score.unique())
-G = data.Sex.values
-I = len(data.Income.unique())
-Q = len(data.Question.unique())
+idata = az.from_netcdf("./idata_wave1_Depression_ordered.nc")
 
-g_idx = data.Sex.values
-i_idx = pd.factorize(data.Income)[0]
-q_idx = pd.factorize(data.Question)[0]
-
-idata = az.from_netcdf("./idata_wave1_depression_ordered.nc")
-    
 
 y_pos = az.extract(idata.posterior.y_hat_probs).y_hat_probs.values
 
@@ -65,23 +60,10 @@ income_legend = ["£0 - £300", "£301 - £490",  "£491 - £740 ", "£741 - £1
 score_legend = ["Not at all (0)", "Several days (1)", 
                 "More than half the days (2)", "Nearly every day (3)"]
 
-question_description = "Over the last two weeks, how often have you been bothered by the following problems?"
 
-question_legend = ["Little interest or pleasure in doing things",
-                   "Feeling down, depressed, or hopeless",
-                   "Trouble falling or staying asleep, or sleeping too much",
-                   "Feeling tired or having little energy",
-                   "Poor appetite or overeating",
-                   "Feeling bad about yourself - or that you are a failure or have let yourself or your family down",
-                   "Trouble concentrating on things, such as reading the newspaper or watching television",
-                   "Moving or speaking so slowly that other people have noticed? Or the opposite - being so fidgety or restless that you have been moving around more than usual",
-                   "Thoughts that you would be better dead or of hurting yourself in some way",
-                   ]
-
-
-income_rep = {"Q1":"£0 - £300", "Q2":"£301 - £490",  
-              "Q3":"£491 - £740 ", "Q4":"£741 - £1,111", 
-                 "Q5":"£1,112 or more"}
+income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
+              "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
+                 "Inc5":"£1,112 or more"}
 
 data.Income.replace(income_rep, inplace=True)
 
@@ -90,14 +72,16 @@ data["Question"] = data["Question"].str.replace("Dep_","Q")
 male = data[data.Gender=="Male"]
 female = data[data.Gender=="Female"]
 
-male = male.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 'Income_2019',
-                  'Education', 'Ethnicity', 'Education_level',
-                  'Ethnic_category'], axis=1)
+male = male.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
+       'Income_2019',  'Education', 'Ethnicity', 'Religion',
+       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Politics'], axis=1)
 male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
-female = female.drop(['pid', 'StartDate', 'Gender', 'Age_year', 'Wave', 'Date', 
-                      'Income_2019', 'Education', 'Ethnicity', 'Education_level',
-                      'Ethnic_category'], axis=1)
+female = female.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
+       'Income_2019',  'Education', 'Ethnicity', 'Religion',
+       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Politics'], axis=1)
 female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
 
@@ -181,15 +165,29 @@ plt.show()
 
 
 
-data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
+data = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+data = data[data.Ethnicity==3]
+#Restrict data to participants without PTSD
+data = data[data.Residence==0]
+# #Restrict data to urban population
+data = data[data.Trauma==0]
+
+
 datas = []
-for d in data.columns[14:]:
-    df = data.drop(data.columns[14:], axis=1)
+for d in data.columns[19:]:
+    df = data.drop(data.columns[19:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
 
 data = pd.concat(datas)
+
+# income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
+#               "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
+#                  "Inc5":"£1,112 or more"}
+
+# data.Income.replace(income_rep, inplace=True)
 
 data = data.sort_values(["Income", "Score"])
 
@@ -411,28 +409,24 @@ for i in tqdm(range(Q)):
 
 
 
-#### Dep score
+#### GAD score
 qs_ids = []
 for i in tqdm(data.Question.unique()):
     q_df = data[data.Question==i]
     for j in data.Income.unique():
         qj_df = q_df[q_df.Income==j]
-        for g in ["Female", "Male"]:
+        for g in data.Gender.unique():
             qg_df = qj_df[qj_df.Gender==g]
-            for k in qg_df.Score.unique():
+            for k in data.Score.unique():
                 qs_df = qg_df[qg_df.Score==k]
                 qs_da = pred_m["y_hat"].sel(ID=qs_df.index.values)
                 # qs_ids.append(qg_da.mean(axis=0))
                 try:
-                    qs_ids.append(np.max(qs_da.T, axis=1)/len(qs_da))
+                    qs_ids.append(np.max(qs_da.T, axis=1)/len(qs_df))
                 except:
                     qs_ids.append(np.repeat(0, qs_da.shape[1]))
                 
-if len(qs_ids) < 9*5*2*4:
-    n = 9*5*2*4 - len(qs_ids)
-    for i in range(n):
-        qs_ids.append(np.repeat(0,y_pos.shape[2]))
-    
+
 q_preds = np.array(qs_ids).reshape(9,5,2,4,y_pos.shape[2])
 
 m_ans = np.flip(q_preds.sum(axis=(3,0)).mean(axis=2))
@@ -440,22 +434,25 @@ s_ans = np.flip(q_preds.sum(axis=(3,0)).std(axis=2))
 g_ans = np.array([["Female", "Male"] for i in  range(len(m_ans))]).flatten()
 i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
 
-dfi = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
+dfi = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+dfi = dfi[dfi.Ethnicity==3]
+#Restrict data to participants without PTSD
+dfi = dfi[dfi.Residence==0]
+# #Restrict data to urban population
+dfi = dfi[dfi.Trauma==0]
+
 dfi = dfi.sort_values(["Income", "Gender"])
 income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
               "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
                  "Inc5":"£1,112+"}
 dfi.Income.replace(income_rep, inplace=True)
 
-
 df_ans = pd.DataFrame({"Mean":m_ans.flatten(), "SD":s_ans.flatten(), 
                        "Gender":g_ans, "Income":i_ans})
 df_ans.Income.replace(income_rep, inplace=True)
 
 colors = ['#556B2F', '#8E4585']
-
-data["y_hat"] = np.max(pred_m["y_hat"], axis=1)
-
 fig, axs = plt.subplots(2,1, figsize=(8,8))
 sns.violinplot(dfi, x="Income", y="Dep_Total", hue="Gender", palette=colors, ax=axs[0])
 axs[0].set_ylabel("Added Score")
@@ -474,12 +471,19 @@ plt.close()
 
 
 
+
 ######## Full Summary
-data = pd.read_csv("./data/depression_covid19_UK_wave1_data.csv")
+data = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+data = data[data.Ethnicity==3]
+#Restrict data to participants without PTSD
+data = data[data.Residence==0]
+# #Restrict data to urban population
+data = data[data.Trauma==0]
 
 datas = []
-for d in data.columns[14:]:
-    df = data.drop(data.columns[14:], axis=1)
+for d in data.columns[19:]:
+    df = data.drop(data.columns[19:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -578,3 +582,5 @@ for i, g in enumerate(data.Gender.unique()):
 aves_summ = pd.DataFrame(aves_summ)  
     
 aves_summ.to_csv("Wave1_summary_full.csv", index=False)    
+    
+

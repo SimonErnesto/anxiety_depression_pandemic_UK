@@ -16,7 +16,6 @@ sns.set(style="whitegrid", font="DeJavu Serif")
 waves = ["wave1", "wave6"]
 
 # Hardcode age statistics (or load from a metadata file)
-# These should match what you used during model fitting
 age_stats = {
     "wave1": {"mean": 52.81, "std": 14.79, "min": 18, "max": 83},
     "wave6": {"mean": 54.71, "std": 14.59, "min": 20.0, "max": 84}

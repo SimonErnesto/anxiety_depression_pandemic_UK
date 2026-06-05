@@ -1,243 +1,160 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
 import numpy as np
 import arviz as az
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import seaborn as sns
 from scipy.special import logit, expit
+import pandas as pd
 
 plt.rcParams['font.family'] = "DeJavu Serif"
 plt.rcParams['font.serif'] = "Cambria Math"
 plt.rcParams['font.size'] = 12
 
 sns.set(style="whitegrid", font="DeJavu Serif")
-# sns.set_style("whitegrid")
 
 waves = ["wave1", "wave6"]
 
+# Hardcode age statistics (or load from a metadata file)
+age_stats = {
+    "wave1": {"mean": 52.81, "std": 14.78, "min": 18, "max": 83},
+    "wave6": {"mean": 54.71, "std": 14.58, "min": 20.0, "max": 84}
+}
 
 for wa in range(len(waves)):
+    wave_name = waves[wa]
     
-    data = pd.read_csv("./data/depression_covid19_UK_"+waves[wa]+"_data.csv")
+    # Load posterior from NetCDF
+    idata = az.from_netcdf(f"./idata_{wave_name}_Depression_ordered.nc")
     
-    wave = data.Wave.values[0]
-    wave = wave.replace("W", "Wave")
+    # Extract coordinates from the NetCDF file
+    gender_labels = list(idata.posterior.coords['gender'].values)
+    question_labels = list(idata.posterior.coords['question'].values)
+    income_labels = list(idata.posterior.coords['income'].values)
     
-    datas = []
-    for d in data.columns[14:]:
-        df = data.drop(data.columns[14:], axis=1)
-        df["Score"] = data[d]
-        df["Question"] = np.repeat(d, len(df))
-        datas.append(df)
+    # Get wave label from coordinates or hardcode
+    wave_label = "Wave1" if "wave1" in wave_name else "Wave6"
     
-    data = pd.concat(datas)
+    # Get age statistics
+    age_mean = age_stats[wave_name]["mean"]
+    age_std = age_stats[wave_name]["std"]
+    age_min = age_stats[wave_name]["min"]
+    age_max = age_stats[wave_name]["max"]
     
-    data = data.sort_values(["Income", "Score"])
+    # Create age array for plotting
+    ages = np.linspace(age_min, age_max, 100)
+    age_z = (ages - age_mean) / age_std
     
-    scores = data.Score.values
+    # Extract parameters
+    alpha_1 = az.extract(idata.posterior.alpha_1, num_samples=1000)["alpha_1"].values
+    a = az.extract(idata.posterior.a, num_samples=1000)["a"].values
+    kappa_j = az.extract(idata.posterior.kappa_j, num_samples=1000)["kappa_j"].values
+    kappa_k = az.extract(idata.posterior.kappa_k, num_samples=1000)["kappa_k"].values
+    alpha_2 = az.extract(idata.posterior.alpha_2, num_samples=1000)["alpha_2"].values
+    c = az.extract(idata.posterior.c, num_samples=1000)["c"].values
+    b = az.extract(idata.posterior.b, num_samples=1000)["b"].values
+    delta = az.extract(idata.posterior.delta, num_samples=1000)["delta"].values
     
-    age = data.Age_year.values
-    age_z = (age - age.mean()) / age.std()
-    
-    S = len(data.Score.unique())
-    G = len(data.Gender.unique())
-    I = len(data.Income.unique())
-    Q = len(data.Question.unique())
-    
-    g_idx = pd.factorize(data.Gender)[0]
-    i_idx = pd.factorize(data.Income)[0]
-    q_idx = pd.factorize(data.Question)[0]
-    
-    idata = az.from_netcdf("./idata_"+waves[wa]+"_depression_ordered.nc")
-    
-    # Extract parameters for the income model
-    alpha_1 = az.extract(idata.posterior.alpha_1, num_samples=1000)["alpha_1"].values  # shape: (1000, 2) for 2 genders
-    a = az.extract(idata.posterior.a, num_samples=1000)["a"].values        # a shape: (1000, 2) for 2 genders
-    kappa_j = az.extract(idata.posterior.kappa_j, num_samples=1000)["kappa_j"].values  # shape: (1000, 4) for 4 cutpoints (5 income levels)
-    kappa_k = az.extract(idata.posterior.kappa_k, num_samples=1000)["kappa_k"].values #(9, 3, 1000)
-    alpha_2 = az.extract(idata.posterior.alpha_2, num_samples=1000)["alpha_2"].values #(2, 9, 1000)
-    c = az.extract(idata.posterior.c, num_samples=1000)["c"].values # c (2, 9, 1000)
-    b = az.extract(idata.posterior.b, num_samples=1000)["b"].values # b (2, 9, 1000)
-    delta = az.extract(idata.posterior.delta, num_samples=1000)["delta"].values #(5, 1000)
-    
+    S = 4  # 4 score levels
+    G = 2  # 2 genders
+    I = 5  # 5 income levels
+    Q = len(question_labels)
     
     ####################### Define Functions ############################
     #####################################################################
     def logistic_pdf(x):
-      return np.exp(x) / (1 + np.exp(x))**2
+        return np.exp(x) / (1 + np.exp(x))**2
         
     def pordlog(a):
         pa = expit(a)
         p_cum = np.concatenate(([0.], pa, [1.]))
         return p_cum[1:] - p_cum[:-1]
     
-    def calculate_income_probabilities(age_z, gender, kappa_j, alpha_1, a):
-        """Calculate income probabilities for each age and sex"""
-        results = []
-        
-        for gender_idx in range(len(gender)):  # 0 and 1 for sexes
-            ages = np.sort(np.unique(age))
-            ages_z = (ages - ages.mean()) / ages.std()
-            for i in tqdm(range(len(np.unique(ages)))):
-                # Calculate probabilities for each posterior sample
-                n_samples = alpha_1.shape[1]  # 1000 samples
-                probs_all = np.zeros((n_samples, 5))  # 5 income levels
-                
-                for s in range(n_samples):
-                    eta = alpha_1[gender_idx, s] + a[gender_idx, s] * ages_z[i]
-                    cuts = kappa_j[:, s] - eta  # kappa_j shape: (4, 1000)
-                    probs_all[s, :] = pordlog(cuts)
-                
-                # Calculate summary statistics for each income level
-                for income_level in range(5):
-                    prob_samples = probs_all[:, income_level]
-                    
-                    results.append({
-                        'age': ages[i],
-                        'sex': gender[gender_idx],
-                        'income_level': "Inc"+str(income_level+1),
-                        'mean': np.mean(prob_samples),
-                        'sd': np.std(prob_samples),
-                        'hdi_5%': az.hdi(prob_samples, hdi_prob=0.9)[0],
-                        'hdi_95%': az.hdi(prob_samples, hdi_prob=0.9)[1]
-                    })
-        
-        return pd.DataFrame(results)
-    
-    
     def age_on_income(gender_idx, beta_var, var_values):
         """
         Compute average marginal effect(AME) for age on income (ordered logistic)
-        
-        gender_idx: which gender to compute for (0 or 1)
-        beta_var: a coefficient for age
-        var_values: standardised age (age_z) values to compute over
         """
         n_samples = 1000
         n_obs = len(var_values)
-        n_categories = 5  # 5 income levels (4 cutpoints)
+        n_categories = 5
         
-        # Get parameters for this gender
-        beta = beta_var[gender_idx,:]  # shape: (1000,)
-        alpha = alpha_1[gender_idx,:]   # shape: (1000,)
+        beta = beta_var[gender_idx,:]
+        alpha = alpha_1[gender_idx,:]
         
         ame_per_obs = np.zeros((n_samples, n_obs, n_categories))
         
         for i, x_val in enumerate(var_values):
-            # Compute linear predictor for this observation
-            eta_val = alpha + beta * x_val  # shape: (1000,)
+            eta_val = alpha + beta * x_val
             
-            # Compute marginal effect for each income category
             for s in range(n_categories):
                 if s == 0:
-                    # P(income=0) = Λ(κ₀ - η)
                     term = logistic_pdf(kappa_j[0,:] - eta_val)
                     ame_per_obs[:, i, s] = -beta * term
-                    
                 elif s == n_categories - 1:
-                    # P(income=4) = 1 - Λ(κ₃ - η)
                     term = logistic_pdf(kappa_j[3,:] - eta_val)
                     ame_per_obs[:, i, s] = beta * term
-                    
                 else:
-                    # P(income=s) = Λ(κ_s - η) - Λ(κ_{s-1} - η)
                     term1 = logistic_pdf(kappa_j[s-1,:] - eta_val)
                     term2 = logistic_pdf(kappa_j[s,:] - eta_val)
                     ame_per_obs[:, i, s] = beta * (term1 - term2)
         
-        # Average across observations
-        return np.mean(ame_per_obs, axis=1).T  # shape: (5, 1000)
+        return np.mean(ame_per_obs, axis=1).T
     
-    
-    def age_on_phq(gender_idx, question_idx, income_idx, beta_var, var_values):
+    def age_on_Depression(gender_idx, question_idx, income_idx, beta_var, var_values):
         """
-        Compute average marginal effects (AME) for continuous variables, holding income constant
-        
-        gender_idx: which gender to compute for (0 or 1)
-        question_idx: which question to compute for (0-8)  
-        income_idx: which income level to hold constant (0-4)
-        beta_var: which beta coefficient to use (e.g., c for age)
-        var_values: values of the variable to compute AME for
+        Compute average marginal effects (AME) for continuous variables
         """
         n_samples = 1000
         n_obs = len(var_values)
-        n_categories = 4  # 3 cutpoints for 4 score categories
+        n_categories = 4
         
-        # Get the relevant parameters
-        kappa_q = kappa_k[question_idx, :, :]  # shape: (3, 1000)
-        beta = beta_var[gender_idx, question_idx, :]  # shape: (1000,)
-        alpha = alpha_2[gender_idx, question_idx, :]  # shape: (1000,)
-        b_val = b[gender_idx, question_idx, :]  # shape: (1000,)
+        kappa_q = kappa_k[question_idx, :, :]
+        beta = beta_var[gender_idx, question_idx, :]
+        alpha = alpha_2[gender_idx, question_idx, :]
+        b_val = b[gender_idx, question_idx, :]
         
-        # Get the specific income effect (not average!)
-        delta_cumsum = np.cumsum(delta, axis=0)  # shape: (5, 1000)
-        income_effect = delta_cumsum[income_idx, :]  # shape: (1000,)
+        delta_cumsum = np.cumsum(delta, axis=0)
+        income_effect = delta_cumsum[income_idx, :]
         
         ame_per_obs = np.zeros((n_samples, n_obs, n_categories))
         
         for i, x_val in enumerate(var_values):
-            # Compute linear predictor for this observation with FIXED income
-            eta_val = alpha + beta * x_val + b_val * income_effect  # shape: (1000,)
+            eta_val = alpha + beta * x_val + b_val * income_effect
             
-            # Compute marginal effect for each category
             for s in range(n_categories):
                 if s == 0:
-                    # P(y=0) = Λ(κ₀ - η)
-                    # ∂P/∂x = -β · λ(κ₀ - η)
                     term = logistic_pdf(kappa_q[0, :] - eta_val)
                     ame_per_obs[:, i, s] = -beta * term
-                    
                 elif s == n_categories - 1:
-                    # P(y=3) = 1 - Λ(κ₂ - η)  
-                    # ∂P/∂x = β · λ(κ₂ - η)
                     term = logistic_pdf(kappa_q[2, :] - eta_val)
                     ame_per_obs[:, i, s] = beta * term
-                    
                 else:
-                    # P(y=s) = Λ(κ_s - η) - Λ(κ_{s-1} - η)
-                    # ∂P/∂x = β · [λ(κ_{s-1} - η) - λ(κ_s - η)]
                     term1 = logistic_pdf(kappa_q[s-1, :] - eta_val)
                     term2 = logistic_pdf(kappa_q[s, :] - eta_val)
                     ame_per_obs[:, i, s] = beta * (term1 - term2)
         
-        # Average across observations
-        return np.mean(ame_per_obs, axis=1).T  # shape: (4,1000)
+        return np.mean(ame_per_obs, axis=1).T
     
-    
-     
-    def income_on_phq(gender_idx, question_idx, income_j, income_k, age_values):
+    def income_on_Depression(gender_idx, question_idx, income_j, income_k, age_values):
         """
         Compute average discrete effect (ADE) for income levels
-        
-        gender_idx: which gender to compute for (0 or 1)
-        question_idx: which question to compute for (0-8)  
-        income_j: base income level
-        income_k: compared income level
-        age_values: values of standardised age
         """
         n_samples = 1000
-        n_obs = len(age_values)
         
-        # Get parameters
-        kappa_q = kappa_k[question_idx, :, :]  # shape: (3, 1000)
-        alpha = alpha_2[gender_idx, question_idx, :]  # shape: (1000,)
-        bA = c[gender_idx, question_idx, :]  # shape: (1000,)
-        b_val = b[gender_idx, question_idx, :]  # shape: (1000,)
+        kappa_q = kappa_k[question_idx, :, :]
+        alpha = alpha_2[gender_idx, question_idx, :]
+        bA = c[gender_idx, question_idx, :]
+        b_val = b[gender_idx, question_idx, :]
         
-        # Get income positions
-        delta_cumsum = np.cumsum(delta, axis=0)  # shape: (5, 1000)
-        income_j_pos = delta_cumsum[income_j, :]  # shape: (1000,)
-        income_k_pos = delta_cumsum[income_k, :]  # shape: (1000,)
+        delta_cumsum = np.cumsum(delta, axis=0)
+        income_j_pos = delta_cumsum[income_j, :]
+        income_k_pos = delta_cumsum[income_k, :]
         
         ade_per_obs = np.zeros((4, n_samples))
         
-        # for i, age_val in enumerate(age_values):
-        # Compute linear predictors for both income levels
-        eta_j = alpha + bA * age_values.mean() + b_val * income_j_pos  # shape: (1000,)
-        eta_k = alpha + bA * age_values.mean() + b_val * income_k_pos  # shape: (1000,)
+        eta_j = alpha + bA * age_values.mean() + b_val * income_j_pos
+        eta_k = alpha + bA * age_values.mean() + b_val * income_k_pos
         
-        # Compute probablity differences for all categories
         for s in range(4):
             if s == 0:
                 p_j = expit(kappa_q[0, :] - eta_j)
@@ -251,70 +168,49 @@ for wa in range(len(waves)):
             
             ade_per_obs[s,:] = p_k - p_j
         
-        # Average across observations
-        return ade_per_obs  # shape: (4,1000)
-    
-    
+        return ade_per_obs
     
     #################### Create Arrays for Plotting ####################
     ####################################################################
     
-    # Calculate probabilities and create dataframe
-    df_income_probs = calculate_income_probabilities(age_z, data.Gender.unique(), kappa_j, alpha_1, a)
-    # Save to CSV
-    df_income_probs.to_csv(wave+"_income_probabilities_summary.csv", index=False)
+    aoi_ames = np.zeros((2, 5, 1000))
+    for g in tqdm(range(G), desc=f"{wave_label}: Age on Income"):
+        aoi_ames[g,:,:] = age_on_income(g, a, age_z) / age_std
     
-    
-    aoi_ames = np.zeros((2,5,1000))
-    for g in tqdm(range(G)):
-        aoi_ames[g,:,:] = age_on_income(g, a, age_z) / age.std() #recover age scale
-        
-    aop_ames = np.zeros((2,9,5,4,1000))
-    for q in tqdm(range(Q)):
+    aop_ames = np.zeros((2, Q, 5, 4, 1000))
+    for q in tqdm(range(Q), desc=f"{wave_label}: Age on Depression"):
         for i in range(I):
             for g in range(G):
-                aop_ames[g,q,i,:,:] = age_on_phq(g, q, i, c, age_z) / age.std() #recover age scale
-                              
-    iop_ades = np.zeros((4, 2, 9, 4, 1000))
-    for k_idx, k in enumerate(tqdm(range(1, 5))):  # k_idx: 0,1,2,3 for Q2,Q3,Q4,Q5
+                aop_ames[g,q,i,:,:] = age_on_Depression(g, q, i, c, age_z) / age_std
+    
+    iop_ades = np.zeros((4, 2, Q, 4, 1000))
+    for k_idx, k in enumerate(tqdm(range(1, 5), desc=f"{wave_label}: Income on Depression")):
         for q in range(Q):
             for g in range(G):
-                # Compute difference between lowest income (0) and current income level (k)
-                ade_result = income_on_phq(g, q, 0, k, age_z)  # shape: (4, 1000)
+                ade_result = income_on_Depression(g, q, 0, k, age_z)
                 iop_ades[k_idx, g, q, :, :] = ade_result
-                
-    iop_ades1 = iop_ades[3,:,:,:,:] #keep only lowest minus highest difference
-    iop_ades2 = iop_ades[:,:,:,0,:] #keep all differences but at score 0 only                
     
-                 
-                    
+    iop_ades1 = iop_ades[3,:,:,:,:]
+    iop_ades2 = iop_ades[:,:,:,0,:]
+    
     ###################### Plot Figure #####################
     ########################################################
     
-    sex_levels = data.Gender.unique()
-    
-    income_levels = ["£0-£300", "£301-£490", "£491-£740", "£741-£1,111", "£1,112+"]
-    
-    age_levels = ["18-31", "31-44", "44-57", "57-70", "70-83"]
-    
-    score_levels = ["Not at all (0)", "Several days (1)", 
-                    "More than half the days (2)", "Nearly every day (1)"]
-        
-    income_comparisons = ["Inc1→Inc2", "Inc1→Inc3", "Inc1→Inc4", "Inc1→Inc5"]  # Comparisons from lowest income
-    
+    sex_levels = gender_labels
+    income_levels = income_labels
     score_levels = ["Score 0", "Score 1", "Score 2", "Score 3"]
+    income_comparisons = ["Inc1→Inc2", "Inc1→Inc3", "Inc1→Inc4", "Inc1→Inc5"]
     
-    # Create the 2x2 figure
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    colors = ['#556B2F', '#8E4585'] #plum for males, olive for females
+    colors = ['#556B2F', '#8E4585']
     
-    # Panel 1: Age effects on income (aoi_ames) - shape: (2, 5, 1000)
+    # Panel 1: Age effects on income
     aoi_summary = np.array([[
         [np.mean(aoi_ames[g, i, :]), 
          np.percentile(aoi_ames[g, i, :], 5),
          np.percentile(aoi_ames[g, i, :], 95)]
         for i in range(5)
-    ] for g in range(2)])  # shape: (2, 5, 3)
+    ] for g in range(2)])
     
     ax1 = axes[0, 0]
     x_pos = np.arange(5)
@@ -338,17 +234,16 @@ for wa in range(len(waves)):
     ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax1.grid(True, alpha=0.3, axis='y')
     
-    # Panel 2: Age effects on PHQ (aop_ames) - shape: (2, 9, 5, 4, 1000)
-    # Average over questions and income: (2, 4, 1000)
-    aop_avg_questions = np.mean(aop_ames, axis=1)  # Average over questions: (2, 5, 4, 1000)
-    aop_avg_income = np.mean(aop_avg_questions, axis=1)  # Average over income: (2, 4, 1000)
+    # Panel 2: Age effects on Depression
+    aop_avg_questions = np.mean(aop_ames, axis=1)
+    aop_avg_income = np.mean(aop_avg_questions, axis=1)
     
     aop_summary = np.array([[
         [np.mean(aop_avg_income[g, s, :]),
          np.percentile(aop_avg_income[g, s, :], 5),
          np.percentile(aop_avg_income[g, s, :], 95)]
         for s in range(4)
-    ] for g in range(2)])  # shape: (2, 4, 3)
+    ] for g in range(2)])
     
     ax2 = axes[0, 1]
     x_pos = np.arange(4)
@@ -372,11 +267,8 @@ for wa in range(len(waves)):
     ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax2.grid(True, alpha=0.3, axis='y')
     
-    # Panel 3: Income effects on PHQ - difference between lowest and highest income
-    # iop_ades shape: (2, 9, 4, 1000) - gender, question, score, samples
+    # Panel 3: Income effects on Depression
     ax3 = axes[1, 0]
-    
-    # Average over questions: (2, 4, 1000)
     iop_avg_questions = np.mean(iop_ades1, axis=1)
     
     x_pos = np.arange(4)
@@ -387,10 +279,8 @@ for wa in range(len(waves)):
         errors_lower = []
         errors_upper = []
         
-        for score_idx in range(4):  # For each PHQ-9 score
-            # Get the ADE for moving from lowest to highest income for this score
-            ade_samples = iop_avg_questions[gender_idx, score_idx, :]  # shape: (1000,)
-            
+        for score_idx in range(4):
+            ade_samples = iop_avg_questions[gender_idx, score_idx, :]
             mean_val = np.mean(ade_samples)
             lower = np.percentile(ade_samples, 5)
             upper = np.percentile(ade_samples, 95)
@@ -414,12 +304,8 @@ for wa in range(len(waves)):
     ax3.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax3.grid(True, alpha=0.3, axis='y')
     
-    
-    # Panel 4: All income differences for Score 0 only (iop_ades2)
-    # iop_ades2 shape: (2, 9, 4, 1000) - gender, question, income_diff, samples
+    # Panel 4: All income differences for Score 0
     ax4 = axes[1, 1]
-    
-    # Average over questions: (2, 4, 1000)
     iop_avg_questions2 = np.mean(iop_ades2, axis=2).swapaxes(0,1)
     
     x_pos = np.arange(4)
@@ -430,10 +316,8 @@ for wa in range(len(waves)):
         errors_lower = []
         errors_upper = []
         
-        for income_diff_idx in range(4):  # For each income comparison
-            # Get the ADE for this income comparison for Score 0
-            ade_samples = iop_avg_questions2[gender_idx, income_diff_idx, :]  # shape: (1000,)
-            
+        for income_diff_idx in range(4):
+            ade_samples = iop_avg_questions2[gender_idx, income_diff_idx, :]
             mean_val = np.mean(ade_samples)
             lower = np.percentile(ade_samples, 5)
             upper = np.percentile(ade_samples, 95)
@@ -457,90 +341,87 @@ for wa in range(len(waves)):
     ax4.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax4.grid(True, alpha=0.3, axis='y')
     
-    
     plt.tight_layout()
-    plt.savefig('effects_'+wave+'.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'effects_{wave_label}.png', dpi=300, bbox_inches='tight')
     plt.show()
     
-    ## compute in log-odds
-    a = a
-    b = b
-    c = c
+    ## Compute effects in log-odds
     mediator_effect = b
     direct_effect = c
     indirect_effect = a[:,None,:] * b
     total_effect = c + a[:,None,:] * b    
     
-    #compute from mfxs
-    a = aoi_ames[:,4,:] * (age.max() - age.min()) #lowest[0] income
-    b = iop_ades[3,:,:,0,:] #lowest to highest income [3] and Score=0 [0]
-    c = aop_ames[:,:,4,0,:] * (age.max() - age.min())  #score = 0 averaged over income and from min to max age
-    mediator_effect = b
-    direct_effect = c
-    indirect_effect = a[:,None,:] * b
-    total_effect = c + a[:,None,:] * b  
+    # Compute from marginal effects
+    a_mfx = aoi_ames[:,4,:] * (age_max - age_min)
+    b_mfx = iop_ades[3,:,:,0,:]
+    c_mfx = aop_ames[:,:,4,0,:] * (age_max - age_min)
     
-    r = mediator_effect.shape[0] * mediator_effect.shape[1]
-    effs = list(np.repeat("Mediator", r)) + list(np.repeat("Direct", r)) + list(np.repeat("Indirect", r)) +  list(np.repeat("Total", r))
+    mediator_effect_mfx = b_mfx
+    direct_effect_mfx = c_mfx
+    indirect_effect_mfx = a_mfx[:,None,:] * b_mfx
+    total_effect_mfx = c_mfx + a_mfx[:,None,:] * b_mfx
     
-    sex1 = np.repeat(data.Gender.unique()[0], Q)
-    sex2 = np.repeat(data.Gender.unique()[1], Q)
+    r = mediator_effect_mfx.shape[0] * mediator_effect_mfx.shape[1]
+    effs = list(np.repeat("Mediator", r)) + list(np.repeat("Direct", r)) + \
+           list(np.repeat("Indirect", r)) + list(np.repeat("Total", r))
+    
+    sex1 = np.repeat(gender_labels[0], Q)
+    sex2 = np.repeat(gender_labels[1], Q)
     sexs = np.array([list(sex1) + list(sex2) for e in range(4)]).flatten()
     
-    qs = data.Question.unique()
-    quests = np.array([qs for g in range(G) for e in range(4)]).flatten()
+    quests = np.array([question_labels for g in range(G) for e in range(4)]).flatten()
     
     effects = pd.DataFrame({"Mean":effs, "SD":effs, "HDI_5":effs, "HDI_95":effs, 
                             "Effect":effs, "Sex":sexs, "Question":quests})
     
-    effects["Question"] = effects["Question"].str.replace("Dep_", "Q")
+    effects["Question"] = effects["Question"].str.replace("Dep_", "Q").str.replace("Dep_", "Q")
     
+    med_mean = mediator_effect_mfx.mean(axis=2).round(3)
+    med_sd = mediator_effect_mfx.std(axis=2).round(3)
+    med_hdi = np.array([az.hdi(mediator_effect_mfx[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3)
     
-    med_mean = mediator_effect.mean(axis=2).round(3)
-    med_sd = mediator_effect.std(axis=2).round(3)
-    med_hdi = np.array([az.hdi(mediator_effect[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3)
+    dir_mean = direct_effect_mfx.mean(axis=2).round(3)
+    dir_sd = direct_effect_mfx.std(axis=2).round(3)
+    dir_hdi = np.array([az.hdi(direct_effect_mfx[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3)
     
-    dir_mean = direct_effect.mean(axis=2).round(3)
-    dir_sd = direct_effect.std(axis=2).round(3)
-    dir_hdi = np.array([az.hdi(direct_effect[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3)  
+    ind_mean = indirect_effect_mfx.mean(axis=2).round(5)
+    ind_sd = indirect_effect_mfx.std(axis=2).round(5)
+    ind_hdi = np.array([az.hdi(indirect_effect_mfx[g].T, hdi_prob=0.9) for g in range(G)]).T.round(5)
     
-    ind_mean = indirect_effect.mean(axis=2).round(5)
-    ind_sd = indirect_effect.std(axis=2).round(5)
-    ind_hdi = np.array([az.hdi(indirect_effect[g].T, hdi_prob=0.9) for g in range(G)]).T.round(5) 
-    
-    tot_mean = total_effect.mean(axis=2).round(3)
-    tot_sd = total_effect.std(axis=2).round(3)
-    tot_hdi = np.array([az.hdi(total_effect[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3) 
+    tot_mean = total_effect_mfx.mean(axis=2).round(3)
+    tot_sd = total_effect_mfx.std(axis=2).round(3)
+    tot_hdi = np.array([az.hdi(total_effect_mfx[g].T, hdi_prob=0.9) for g in range(G)]).T.round(3)
     
     effects["Mean"] = np.array([med_mean, dir_mean, ind_mean, tot_mean]).flatten()
     effects["SD"] = np.array([med_sd, dir_sd, ind_sd, tot_sd]).flatten()
     effects["HDI_5"] = np.array([med_hdi[0], dir_hdi[0], ind_hdi[0], tot_hdi[0]]).flatten()
     effects["HDI_95"] = np.array([med_hdi[1], dir_hdi[1], ind_hdi[1], tot_hdi[1]]).flatten()
     
-    effects.to_csv(wave+"_effects_summary.csv", index=False)
+    effects.to_csv(f"{wave_label}_effects_summary.csv", index=False)
     
+    # Average effects
+    med_mean = mediator_effect_mfx.mean(axis=(1,2)).round(3)
+    med_sd = mediator_effect_mfx.std(axis=(1,2)).round(3)
+    med_hdi = az.hdi(mediator_effect_mfx.T, hdi_prob=0.9).T.round(3)
     
-    med_mean = mediator_effect.mean(axis=(1,2)).round(3)
-    med_sd = mediator_effect.std(axis=(1,2)).round(3)
-    med_hdi = az.hdi(mediator_effect.T, hdi_prob=0.9).T.round(3)
+    dir_mean = direct_effect_mfx.mean(axis=(1,2)).round(3)
+    dir_sd = direct_effect_mfx.std(axis=(1,2)).round(3)
+    dir_hdi = az.hdi(direct_effect_mfx.T, hdi_prob=0.9).T.round(3)
     
-    dir_mean = direct_effect.mean(axis=(1,2)).round(3)
-    dir_sd = direct_effect.std(axis=(1,2)).round(3)
-    dir_hdi = az.hdi(direct_effect.T, hdi_prob=0.9).T.round(3)  
+    ind_mean = indirect_effect_mfx.mean(axis=(1,2)).round(5)
+    ind_sd = indirect_effect_mfx.std(axis=(1,2)).round(5)
+    ind_hdi = az.hdi(indirect_effect_mfx.T, hdi_prob=0.9).T.round(5)
     
-    ind_mean = indirect_effect.mean(axis=(1,2)).round(5)
-    ind_sd = indirect_effect.std(axis=(1,2)).round(5)
-    ind_hdi = az.hdi(indirect_effect.T, hdi_prob=0.9).T.round(5) 
+    tot_mean = total_effect_mfx.mean(axis=(1,2)).round(3)
+    tot_sd = total_effect_mfx.std(axis=(1,2)).round(3)
+    tot_hdi = az.hdi(total_effect_mfx.T, hdi_prob=0.9).T.round(3)
     
-    tot_mean = total_effect.mean(axis=(1,2)).round(3)
-    tot_sd = total_effect.std(axis=(1,2)).round(3)
-    tot_hdi = az.hdi(total_effect.T, hdi_prob=0.9).T.round(3) 
+    r = mediator_effect_mfx.shape[0] 
+    effs = list(np.repeat("Mediator", r)) + list(np.repeat("Direct", r)) + \
+           list(np.repeat("Indirect", r)) + list(np.repeat("Total", r))
     
-    r = mediator_effect.shape[0] 
-    effs = list(np.repeat("Mediator", r)) + list(np.repeat("Direct", r)) + list(np.repeat("Indirect", r)) +  list(np.repeat("Total", r))
-    
-    sex1 = np.repeat(data.Gender.unique()[0], 1)
-    sex2 = np.repeat(data.Gender.unique()[1], 1)
+    sex1 = np.repeat(gender_labels[0], 1)
+    sex2 = np.repeat(gender_labels[1], 1)
     sexs = np.array([list(sex1) + list(sex2) for e in range(4)]).flatten()
     
     effects_ave = pd.DataFrame({"Effect":effs, "Sex":sexs, 
@@ -551,6 +432,4 @@ for wa in range(len(waves)):
     effects_ave["HDI_5"] = np.array([med_hdi[0], dir_hdi[0], ind_hdi[0], tot_hdi[0]]).flatten()
     effects_ave["HDI_95"] = np.array([med_hdi[1], dir_hdi[1], ind_hdi[1], tot_hdi[1]]).flatten()
     
-    effects_ave.to_csv(wave+"_average_effects_summary.csv", index=False)
-    
-    
+    effects_ave.to_csv(f"{wave_label}_average_effects_summary.csv", index=False)

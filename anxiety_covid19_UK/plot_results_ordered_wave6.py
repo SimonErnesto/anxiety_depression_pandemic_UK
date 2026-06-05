@@ -13,6 +13,16 @@ plt.rcParams['font.size'] = 12
 sns.set(style="whitegrid", font="DeJavu Serif")
 # sns.set_style("whitegrid")
 
+data_w1 = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
+#restrict population to the majority ethnicity only
+data_w1 = data_w1[data_w1.Ethnicity==3]
+#Restrict data to participants without PTSD
+data_w1 = data_w1[data_w1.Residence==0]
+# #Restrict data to urban population
+data_w1 = data_w1[data_w1.Trauma==0]
+
+
+
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
@@ -20,6 +30,8 @@ data = data[data.Ethnicity==3]
 data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
+
+data = data[data.pid.isin(data_w1.pid.unique())]
 
 datas = []
 for d in data.columns[19:]:
@@ -87,17 +99,28 @@ means = ["m_0", "m_1", "m_2", "m_3"]
 
 panels = ["A. ", "B. ", "C. ", "D. "]
 
+# Define all income categories in the correct order
+income_categories = ['£0 - £300', '£301 - £490', '£491 - £740 ', '£741 - £1,111', '£1,112 or more']
+
 fig, axs = plt.subplots(2,2, figsize=(12,6))
-axs = [ axs[0,0], axs[0,1], axs[1,0], axs[1,1]]
+axs = [axs[0,0], axs[0,1], axs[1,0], axs[1,1]]
+
 for k in tqdm(range(K)):
-    df = male[male.Score==k]
+    df = male[male.Score == k]
+    
     df = df.pivot_table(index='Income', columns='Question', values=means[k], sort=False)
     df = df[sorted(df.columns)]
-    df.fillna(0, inplace=True) 
-    sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", cbar_kws={'label': 'Probability'})
+    df.fillna(0, inplace=True)
+    
+    # ADD THIS LINE: Reindex to ensure all income levels exist
+    df = df.reindex(income_categories, fill_value=0)
+    
+    sns.heatmap(df, vmin=0, vmax=1, ax=axs[k], cmap="plasma", 
+                cbar_kws={'label': 'Probability'})
     axs[k].set_yticklabels(["Inc1", "Inc2", "Inc3", "Inc4", "Inc5"], rotation=0)
-    axs[k].set_title(panels[k]+score_legend[k], loc="left")
+    axs[k].set_title(panels[k] + score_legend[k], loc="left")
     axs[k].set_ylabel("Weekly Household Income", size=10)
+
 plt.suptitle("Male", size=16)    
 plt.tight_layout()
 plt.savefig("male_probs_ordered_wave6.png", dpi=300)
@@ -170,6 +193,9 @@ data = data[data.Ethnicity==3]
 data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
+
+data = data[data.pid.isin(data_w1.pid.unique())]
+
 
 datas = []
 for d in data.columns[19:]:
@@ -433,6 +459,9 @@ dfi = dfi[dfi.Residence==0]
 # #Restrict data to urban population
 dfi = dfi[dfi.Trauma==0]
 
+dfi = dfi[dfi.pid.isin(data_w1.pid.unique())]
+
+
 dfi = dfi.sort_values(["Income", "Gender"])
 income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
               "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
@@ -471,6 +500,9 @@ data = data[data.Ethnicity==3]
 data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
+
+data = data[data.pid.isin(data_w1.pid.unique())]
+
 
 datas = []
 for d in data.columns[19:]:
