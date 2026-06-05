@@ -11,7 +11,7 @@ This repository implements a Bayesian mediation model examining whether househol
 - **Gender**: Stratifying variable
 - **Question**: Questionnaire item (allowing for item-specific effects)
 
-<img src="DAG_Two_Models_Final.png" alt="directed acyclic graph of mediation model"  width="50%"  />
+<img src="DAG_Two_Models_Final.png" alt="directed acyclic graph of mediation model"  width="80%"  />
 
 ### Mathematical Specification
 
