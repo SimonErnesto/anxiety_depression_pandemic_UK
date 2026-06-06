@@ -25,8 +25,8 @@ data = data[data.pid.isin(data_w1.pid.unique())]
         
 # Reshape data
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -45,7 +45,7 @@ q_idx = data["Question"].replace({'Dep_1':0, 'Dep_2':1, 'Dep_3':2,
 confounder_cols_1 = ["Education", "Employment", "Children"]
 
 confounder_cols_2 = ["Education", "Employment", "Children", 
-                     "Religion", "Loneliness", "Politics"]
+                     "Religion", "Loneliness", "Politics", "Housing"]
 
 # Create the matrices X_1 and X_2
 X_1 = data[confounder_cols_1].values.astype(float)

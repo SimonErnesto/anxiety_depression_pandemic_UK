@@ -21,10 +21,19 @@ data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
 
+data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
+data_w6 = data_w6[data_w6.Ethnicity==3]
+data_w6 = data_w6[data_w6.Residence==0]
+data_w6 = data_w6[data_w6.Trauma==0]
+
+# This guarantess that datasets from both waves have exactly the same people
+data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
+data = data[data.pid.isin(data_w6.pid.unique())]
+
 
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -173,10 +182,19 @@ data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
 
+data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
+data_w6 = data_w6[data_w6.Ethnicity==3]
+data_w6 = data_w6[data_w6.Residence==0]
+data_w6 = data_w6[data_w6.Trauma==0]
+
+# This guarantess that datasets from both waves have exactly the same people
+data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
+data = data[data.pid.isin(data_w6.pid.unique())]
+
 
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -442,6 +460,16 @@ dfi = dfi[dfi.Residence==0]
 # #Restrict data to urban population
 dfi = dfi[dfi.Trauma==0]
 
+data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
+data_w6 = data_w6[data_w6.Ethnicity==3]
+data_w6 = data_w6[data_w6.Residence==0]
+data_w6 = data_w6[data_w6.Trauma==0]
+
+# This guarantess that datasets from both waves have exactly the same people
+data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
+dfi = dfi[dfi.pid.isin(data_w6.pid.unique())]
+
+
 dfi = dfi.sort_values(["Income", "Gender"])
 income_rep = {"Inc1":"£0 - £300", "Inc2":"£301 - £490",  
               "Inc3":"£491 - £740 ", "Inc4":"£741 - £1,111", 
@@ -481,9 +509,19 @@ data = data[data.Residence==0]
 # #Restrict data to urban population
 data = data[data.Trauma==0]
 
+data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
+data_w6 = data_w6[data_w6.Ethnicity==3]
+data_w6 = data_w6[data_w6.Residence==0]
+data_w6 = data_w6[data_w6.Trauma==0]
+
+# This guarantess that datasets from both waves have exactly the same people
+data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
+data = data[data.pid.isin(data_w6.pid.unique())]
+
+
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

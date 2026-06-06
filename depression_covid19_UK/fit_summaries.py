@@ -36,13 +36,22 @@ for wa in range(len(waves)):
         data = data[data.Residence==0]
         data = data[data.Trauma==0]
 
+        data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
+        data_w6 = data_w6[data_w6.Ethnicity==3]
+        data_w6 = data_w6[data_w6.Residence==0]
+        data_w6 = data_w6[data_w6.Trauma==0]
+        
+        # This guarantess that datasets from both waves have exactly the same people
+        data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
+        data = data[data.pid.isin(data_w6.pid.unique())]
+
     wave = data.Wave.values[0]
     wave = wave.replace("W", "Wave")
 
     # Reshape data from wide to long format
     datas = []
-    for d in data.columns[19:]:
-        df = data.drop(data.columns[19:], axis=1)
+    for d in data.columns[20:]:
+        df = data.drop(data.columns[20:], axis=1)
         df["Score"] = data[d]
         df["Question"] = np.repeat(d, len(df))
         datas.append(df)

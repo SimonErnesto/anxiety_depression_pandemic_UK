@@ -34,8 +34,8 @@ data = data[data.Trauma==0]
 data = data[data.pid.isin(data_w1.pid.unique())]
 
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -198,8 +198,8 @@ data = data[data.pid.isin(data_w1.pid.unique())]
 
 
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -505,8 +505,8 @@ data = data[data.pid.isin(data_w1.pid.unique())]
 
 
 datas = []
-for d in data.columns[19:]:
-    df = data.drop(data.columns[19:], axis=1)
+for d in data.columns[20:]:
+    df = data.drop(data.columns[20:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
