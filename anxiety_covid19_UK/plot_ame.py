@@ -30,7 +30,7 @@ for wa in range(len(waves)):
     # Extract coordinates from the NetCDF file
     gender_labels = list(idata.posterior.coords['gender'].values)
     question_labels = list(idata.posterior.coords['question'].values)
-    income_labels = list(idata.posterior.coords['income'].values)
+    income_labels = list(np.sort(idata.posterior.coords['income'].values))
     
     # Get wave label from coordinates or hardcode
     wave_label = "Wave1" if "wave1" in wave_name else "Wave6"

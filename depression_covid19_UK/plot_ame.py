@@ -30,7 +30,7 @@ for wa in range(len(waves)):
     # Extract coordinates from the NetCDF file
     gender_labels = list(idata.posterior.coords['gender'].values)
     question_labels = list(idata.posterior.coords['question'].values)
-    income_labels = list(idata.posterior.coords['income'].values)
+    income_labels = list(np.sort(idata.posterior.coords['income'].values))
     
     # Get wave label from coordinates or hardcode
     wave_label = "Wave1" if "wave1" in wave_name else "Wave6"
@@ -433,3 +433,8 @@ for wa in range(len(waves)):
     effects_ave["HDI_95"] = np.array([med_hdi[1], dir_hdi[1], ind_hdi[1], tot_hdi[1]]).flatten()
     
     effects_ave.to_csv(f"{wave_label}_average_effects_summary.csv", index=False)
+    
+    
+    
+
+
