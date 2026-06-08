@@ -11,15 +11,9 @@ data = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
 
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data_w6 = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # This guarantess that datasets from both waves have exactly the same people
 data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
@@ -27,8 +21,8 @@ data = data[data.pid.isin(data_w6.pid.unique())]
 
 # Reshape data
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

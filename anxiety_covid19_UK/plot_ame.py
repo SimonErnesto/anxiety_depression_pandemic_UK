@@ -17,8 +17,8 @@ waves = ["wave1", "wave6"]
 
 # Hardcode age statistics (or load from a metadata file)
 age_stats = {
-    "wave1": {"mean": 52.81, "std": 14.79, "min": 18, "max": 83},
-    "wave6": {"mean": 54.71, "std": 14.59, "min": 20.0, "max": 84}
+    "wave1": {"mean": 50.28, "std": 15, "min": 18, "max": 83},
+    "wave6": {"mean": 51.72, "std": 15.01, "min": 20.0, "max": 84}
 }
 
 for wa in range(len(waves)):
@@ -233,6 +233,7 @@ for wa in range(len(waves)):
     ax1.legend()
     ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax1.grid(True, alpha=0.3, axis='y')
+    ax1.set_ylim(-0.002, 0.007)
     
     # Panel 2: Age effects on GAD
     aop_avg_questions = np.mean(aop_ames, axis=1)
@@ -266,6 +267,7 @@ for wa in range(len(waves)):
     ax2.legend()
     ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.7)
     ax2.grid(True, alpha=0.3, axis='y')
+    ax2.set_ylim(-0.004, 0.007)
     
     # Panel 3: Income effects on GAD
     ax3 = axes[1, 0]

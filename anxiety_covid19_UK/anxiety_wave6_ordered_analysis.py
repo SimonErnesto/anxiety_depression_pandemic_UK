@@ -11,25 +11,17 @@ np.random.seed(27)
 data_w1 = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 data_w1 = data_w1[data_w1.Ethnicity==3]
-#Restrict data to participants without PTSD
-data_w1 = data_w1[data_w1.Residence==0]
-# #Restrict data to urban population
-data_w1 = data_w1[data_w1.Trauma==0]
 
 data = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data = data[data.pid.isin(data_w1.pid.unique())]
 
 # Reshape data
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

@@ -39,10 +39,12 @@ def income_on_gad(gender_idx, income_j, income_k, age_values, age_mean, age_std,
     
     return ade_per_obs.T
 
+# Hardcode age statistics (or load from a metadata file)
 age_stats = {
-    "wave1": {"mean": 52.81, "std": 14.79, "min": 18, "max": 83},
-    "wave6": {"mean": 54.71, "std": 14.59, "min": 20.0, "max": 84}
+    "wave1": {"mean": 50.28, "std": 15, "min": 18, "max": 83},
+    "wave6": {"mean": 51.72, "std": 15.01, "min": 20.0, "max": 84}
 }
+
 
 waves = ["wave1", "wave6"]
 wave_labels = ["Wave-1", "Wave-6"]
@@ -111,7 +113,7 @@ for wave_idx, wave_name in enumerate(waves):
         
         ax.set_xlabel('Age (years)', fontsize=11)
         ax.set_ylabel('Probability Change', fontsize=11)
-        ax.set_ylim(-0.07, 0.25)
+        ax.set_ylim(-0.1, 0.25)
         ax.set_title(f'{wave_labels[wave_idx]} {gender}\nIncome Effect on "No Anxiety" (Score=0)', 
                     fontsize=12, fontweight='bold')
         ax.legend(loc='best', fontsize=8)

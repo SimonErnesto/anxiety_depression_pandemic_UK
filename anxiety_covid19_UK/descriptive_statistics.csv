@@ -1,0 +1,27 @@
+Wave,Statistic,Income,Variable,GAD_Threshold,Count,Mean,SD,Min,Max
+Wave1,value_counts,Inc1,,,210.0,,,,
+Wave1,value_counts,Inc4,,,197.0,,,,
+Wave1,value_counts,Inc5,,,193.0,,,,
+Wave1,value_counts,Inc3,,,170.0,,,,
+Wave1,value_counts,Inc2,,,169.0,,,,
+Wave1,descriptive_stats,,Age_year,,,50.28,15.0,18.0,83.0
+Wave1,descriptive_stats,,GAD_Total,,,4.48,5.43,0.0,21.0
+Wave1,threshold_counts,,,0 to 4,586.0,,,,
+Wave1,threshold_counts,,,5 to 9,194.0,,,,
+Wave1,threshold_counts,,,10 to 14,88.0,,,,
+Wave1,threshold_counts,,,15 to 21,71.0,,,,
+Wave1,gender_counts,,,,476.0,,,,
+Wave1,gender_counts,,,,463.0,,,,
+Wave6,value_counts,Inc1,,,210.0,,,,
+Wave6,value_counts,Inc4,,,197.0,,,,
+Wave6,value_counts,Inc5,,,193.0,,,,
+Wave6,value_counts,Inc3,,,170.0,,,,
+Wave6,value_counts,Inc2,,,169.0,,,,
+Wave6,descriptive_stats,,Age_year,,,51.72,15.01,20.0,84.0
+Wave6,descriptive_stats,,GAD_Total,,,3.75,5.21,0.0,21.0
+Wave6,threshold_counts,,,0 to 4,649.0,,,,
+Wave6,threshold_counts,,,5 to 9,157.0,,,,
+Wave6,threshold_counts,,,10 to 14,79.0,,,,
+Wave6,threshold_counts,,,15 to 21,54.0,,,,
+Wave6,gender_counts,,,,475.0,,,,
+Wave6,gender_counts,,,,464.0,,,,

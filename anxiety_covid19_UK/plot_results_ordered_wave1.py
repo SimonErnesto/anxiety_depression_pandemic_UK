@@ -16,23 +16,17 @@ sns.set(style="whitegrid", font="DeJavu Serif")
 data = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data_w6 = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # This guarantess that datasets from both waves have exactly the same people
 data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
 data = data[data.pid.isin(data_w6.pid.unique())]
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -82,13 +76,13 @@ female = data[data.Gender=="Female"]
 
 male = male.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
        'Income_2019',  'Education', 'Ethnicity', 'Religion',
-       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Children', 'Loneliness', 'Employment',
        'Politics'], axis=1)
 male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
 female = female.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
        'Income_2019',  'Education', 'Ethnicity', 'Religion',
-       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Children', 'Loneliness', 'Employment',
        'Politics'], axis=1)
 female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
@@ -176,23 +170,17 @@ plt.show()
 data = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data_w6 = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # This guarantess that datasets from both waves have exactly the same people
 data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
 data = data[data.pid.isin(data_w6.pid.unique())]
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -453,15 +441,9 @@ i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
 dfi = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 dfi = dfi[dfi.Ethnicity==3]
-#Restrict data to participants without PTSD
-dfi = dfi[dfi.Residence==0]
-# #Restrict data to urban population
-dfi = dfi[dfi.Trauma==0]
 
 data_w6 = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # This guarantess that datasets from both waves have exactly the same people
 data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
@@ -501,23 +483,17 @@ plt.close()
 data = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data_w6 = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # This guarantess that datasets from both waves have exactly the same people
 data_w6 = data_w6[data_w6.pid.isin(data.pid.unique())]
 data = data[data.pid.isin(data_w6.pid.unique())]
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

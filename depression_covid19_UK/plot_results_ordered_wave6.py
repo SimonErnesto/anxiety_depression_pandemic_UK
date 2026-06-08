@@ -16,26 +16,16 @@ sns.set(style="whitegrid", font="DeJavu Serif")
 data_w1 = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 data_w1 = data_w1[data_w1.Ethnicity==3]
-#Restrict data to participants without PTSD
-data_w1 = data_w1[data_w1.Residence==0]
-# #Restrict data to urban population
-data_w1 = data_w1[data_w1.Trauma==0]
-
-
 
 data = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data = data[data.pid.isin(data_w1.pid.unique())]
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -84,13 +74,13 @@ female = data[data.Gender=="Female"]
 
 male = male.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
        'Income_2019', 'Education', 'Ethnicity', 'Religion',
-       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Children', 'Loneliness', 'Employment',
        'Politics'], axis=1)
 male = male.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
 female = female.drop(['pid', 'StartDate', 'Gender', 'Sex', 'Age_year', 'Wave', 'Date',
        'Income_2019', 'Education', 'Ethnicity', 'Religion',
-       'Children', 'Residence', 'Loneliness', 'Trauma', 'Employment',
+       'Children', 'Loneliness', 'Employment',
        'Politics'], axis=1)
 female = female.groupby(["Income", "Question", "Score"], as_index=False, sort=False).mean()
 
@@ -189,17 +179,13 @@ plt.show()
 data = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data = data[data.pid.isin(data_w1.pid.unique())]
 
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)
@@ -454,10 +440,6 @@ i_ans = np.repeat(data.Income.unique(), len(m_ans.T)).flatten()
 dfi = pd.read_csv("./data/Depression_covid19_UK_wave1_data.csv")
 #restrict population to the majority ethnicity only
 dfi = dfi[dfi.Ethnicity==3]
-#Restrict data to participants without PTSD
-dfi = dfi[dfi.Residence==0]
-# #Restrict data to urban population
-dfi = dfi[dfi.Trauma==0]
 
 dfi = dfi[dfi.pid.isin(data_w1.pid.unique())]
 
@@ -496,17 +478,13 @@ plt.close()
 data = pd.read_csv("./data/Depression_covid19_UK_wave6_data.csv")
 #restrict population to the majority ethnicity only
 data = data[data.Ethnicity==3]
-#Restrict data to participants without PTSD
-data = data[data.Residence==0]
-# #Restrict data to urban population
-data = data[data.Trauma==0]
 
 data = data[data.pid.isin(data_w1.pid.unique())]
 
 
 datas = []
-for d in data.columns[20:]:
-    df = data.drop(data.columns[20:], axis=1)
+for d in data.columns[18:]:
+    df = data.drop(data.columns[18:], axis=1)
     df["Score"] = data[d]
     df["Question"] = np.repeat(d, len(df))
     datas.append(df)

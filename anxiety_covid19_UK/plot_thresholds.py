@@ -18,18 +18,15 @@ data_w1 = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
 
 # Restrict population
 data_w1 = data_w1[data_w1.Ethnicity==3]
-data_w1 = data_w1[data_w1.Residence==0]
-data_w1 = data_w1[data_w1.Trauma==0]
 
 # Load wave 6 data
 data_w6 = pd.read_csv("./data/anxiety_covid19_UK_wave6_data.csv")
 data_w6 = data_w6[data_w6.Ethnicity==3]
-data_w6 = data_w6[data_w6.Residence==0]
-data_w6 = data_w6[data_w6.Trauma==0]
 
 # Match subjects across waves
 data_w6 = data_w6[data_w6.pid.isin(data_w1.pid.unique())]
 data_w1 = data_w1[data_w1.pid.isin(data_w6.pid.unique())]
+
 
 # Calculate observed GAD-7 totals
 gad_columns = [f'GAD_{i}' for i in range(1, 8)]
@@ -51,8 +48,8 @@ pred_scores_w6 = y_hat_w6.reshape(n_samples, n_obs_w6)
 
 # Create long format for wave 1
 datas_w1 = []
-for d in data_w1.columns[20:]:
-    df = data_w1.drop(data_w1.columns[20:], axis=1)
+for d in data_w1.columns[18:]:
+    df = data_w1.drop(data_w1.columns[18:], axis=1)
     df["Score"] = data_w1[d]
     df["Question"] = np.repeat(d, len(df))
     datas_w1.append(df)
@@ -62,8 +59,8 @@ data_long_w1.reset_index(inplace=True, drop=True)
 
 # Create long format for wave 6
 datas_w6 = []
-for d in data_w6.columns[20:]:
-    df = data_w6.drop(data_w6.columns[20:], axis=1)
+for d in data_w6.columns[18:]:
+    df = data_w6.drop(data_w6.columns[18:], axis=1)
     df["Score"] = data_w6[d]
     df["Question"] = np.repeat(d, len(df))
     datas_w6.append(df)
@@ -125,6 +122,7 @@ observed_w6 = calculate_observed_proportions(data_w6)
 
 # Define thresholds
 thresholds = ['Minimal', 'Mild', 'Moderate', 'Severe']
+threshold_ranges = [(0, 4), (5, 9), (10, 14), (15, 21)]
 colors = ['#2ecc71', '#f39c12', '#e67e22', '#e74c3c']
 income_levels = sorted(data_w1['Income'].unique())
 
@@ -142,7 +140,7 @@ def get_group_props(gad7_totals, incomes, genders, gender, income_levels):
         subject_indices = np.where(inc_mask)[0]
         
         if len(subject_indices) > 0:
-            for thresh_idx, (low, high) in enumerate([(0, 4), (5, 9), (10, 14), (15, 21)]):
+            for thresh_idx, (low, high) in enumerate(threshold_ranges):
                 in_category = (gad7_totals[:, subject_indices] >= low) & (gad7_totals[:, subject_indices] <= high)
                 props_sample = in_category.mean(axis=1)
                 props[thresh_idx, inc_idx] = props_sample.mean()
@@ -157,6 +155,98 @@ w1_female_props, w1_female_lower, w1_female_upper = get_group_props(gad7_w1, inc
 w1_male_props, w1_male_lower, w1_male_upper = get_group_props(gad7_w1, incomes_w1, genders_w1, 'Male', income_levels)
 w6_female_props, w6_female_lower, w6_female_upper = get_group_props(gad7_w6, incomes_w6, genders_w6, 'Female', income_levels)
 w6_male_props, w6_male_lower, w6_male_upper = get_group_props(gad7_w6, incomes_w6, genders_w6, 'Male', income_levels)
+
+
+# =============================================
+# CREATE CSV SUMMARY OF PROBABILITIES BY INCOME AND GENDER
+# =============================================
+
+summary_data = []
+
+# For each wave
+for wave_name, wave_props, wave_observed in [('Wave1', 
+                                               {'Female': (w1_female_props, w1_female_lower, w1_female_upper),
+                                                'Male': (w1_male_props, w1_male_lower, w1_male_upper)},
+                                               observed_w1),
+                                              ('Wave6',
+                                               {'Female': (w6_female_props, w6_female_lower, w6_female_upper),
+                                                'Male': (w6_male_props, w6_male_lower, w6_male_upper)},
+                                               observed_w6)]:
+    
+    for gender in ['Female', 'Male']:
+        props, lower, upper = wave_props[gender]
+        
+        for inc_idx, income in enumerate(income_levels):
+            for thresh_idx, (threshold, (low, high)) in enumerate(zip(thresholds, threshold_ranges)):
+                
+                # Posterior estimates
+                posterior_mean = props[thresh_idx, inc_idx]
+                posterior_lower = lower[thresh_idx, inc_idx]
+                posterior_upper = upper[thresh_idx, inc_idx]
+                
+                # Observed proportion
+                observed_prop = wave_observed[gender][income][thresh_idx]
+                
+                # Sample size for this group
+                if wave_name == 'Wave1':
+                    n_obs = len(data_w1[(data_w1['Gender'] == gender) & (data_w1['Income'] == income)])
+                else:
+                    n_obs = len(data_w6[(data_w6['Gender'] == gender) & (data_w6['Income'] == income)])
+                
+                summary_data.append({
+                    'Wave': wave_name,
+                    'Gender': gender,
+                    'Income': income,
+                    'Threshold': threshold,
+                    'GAD_Range': f"{low}-{high}",
+                    'N_Observations': n_obs,
+                    'Posterior_Probability_Mean': posterior_mean.round(2) * 100,
+                    'Posterior_Probability_Lower_90HDI': posterior_lower.round(2) * 100,
+                    'Posterior_Probability_Upper_90HDI': posterior_upper.round(2) * 100,
+                    'Observed_Proportion': observed_prop.round(2) * 100,
+                    'Difference_Posterior_vs_Observed': np.round(posterior_mean - observed_prop, 2) * 100
+                })
+
+# Convert to DataFrame
+summary_df = pd.DataFrame(summary_data)
+
+# # Save to CSV
+# summary_df.to_csv('gad_probabilities_by_income_gender.csv', index=False)
+
+# Also create a pivot table version for easier reading
+pivot_data = []
+for wave in ['Wave1', 'Wave6']:
+    for gender in ['Female', 'Male']:
+        for threshold in thresholds:
+            subset = summary_df[(summary_df['Wave'] == wave) & 
+                               (summary_df['Gender'] == gender) & 
+                               (summary_df['Threshold'] == threshold)]
+            
+            for income in income_levels:
+                row_data = subset[subset['Income'] == income].iloc[0]
+                pivot_data.append({
+                    'Wave': wave,
+                    'Gender': gender,
+                    'Threshold': threshold,
+                    'Income': income,
+                    'Posterior_Prob': f"{row_data['Posterior_Probability_Mean']:.3f}",
+                    '95HDI': f"[{row_data['Posterior_Probability_Lower_90HDI']:.3f}, {row_data['Posterior_Probability_Upper_90HDI']:.3f}]",
+                    'Observed': f"{row_data['Observed_Proportion']:.3f}",
+                    'N': row_data['N_Observations']
+                })
+
+pivot_df = pd.DataFrame(pivot_data)
+pivot_df.to_csv('gad_probabilities_pivot_format.csv', index=False)
+
+print("CSV files saved:")
+print("1. gad_probabilities_by_income_gender.csv - Long format with all estimates")
+print("2. gad_probabilities_pivot_format.csv - More readable pivot format")
+print("\nPreview of the summary data:")
+print(summary_df.head(20))
+
+# =============================================
+# CREATE 4-PANEL FIGURE (your original plotting code)
+# =============================================
 
 # Create 4-panel figure (no suptitle)
 fig, axes = plt.subplots(2, 2, figsize=(18, 14))
@@ -279,3 +369,16 @@ ax4.grid(True, alpha=0.3, axis='y')
 plt.tight_layout()
 plt.savefig("anxiety_posterior_vs_observed_wave1_wave6.png", dpi=300, bbox_inches='tight')
 plt.show()
+
+# Print summary statistics
+print("\n" + "="*60)
+print("SUMMARY STATISTICS BY INCOME AND GENDER")
+print("="*60)
+for wave in ['Wave1', 'Wave6']:
+    print(f"\n{wave}:")
+    for gender in ['Female', 'Male']:
+        print(f"\n  {gender}:")
+        subset = summary_df[(summary_df['Wave'] == wave) & (summary_df['Gender'] == gender)]
+        for threshold in thresholds:
+            thresh_subset = subset[subset['Threshold'] == threshold]
+            print(f"    {threshold}: Mean posterior probability = {thresh_subset['Posterior_Probability_Mean'].mean():.3f}")

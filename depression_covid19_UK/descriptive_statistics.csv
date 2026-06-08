@@ -1,0 +1,29 @@
+Wave,Statistic,Income,Variable,PHQ_Threshold,Count,Mean,SD,Min,Max
+Wave1,value_counts,Inc1,,,210.0,,,,
+Wave1,value_counts,Inc4,,,197.0,,,,
+Wave1,value_counts,Inc5,,,193.0,,,,
+Wave1,value_counts,Inc3,,,170.0,,,,
+Wave1,value_counts,Inc2,,,169.0,,,,
+Wave1,descriptive_stats,,Age_year,,,50.28,15.0,18.0,83.0
+Wave1,descriptive_stats,,Dep_Total,,,4.31,5.51,0.0,27.0
+Wave1,threshold_counts,,,0 to 4,628.0,,,,
+Wave1,threshold_counts,,,5 to 9,167.0,,,,
+Wave1,threshold_counts,,,10 to 14,75.0,,,,
+Wave1,threshold_counts,,,15 to 19,46.0,,,,
+Wave1,threshold_counts,,,20 to 27,23.0,,,,
+Wave1,gender_counts,,,,476.0,,,,
+Wave1,gender_counts,,,,463.0,,,,
+Wave6,value_counts,Inc1,,,210.0,,,,
+Wave6,value_counts,Inc4,,,197.0,,,,
+Wave6,value_counts,Inc5,,,193.0,,,,
+Wave6,value_counts,Inc3,,,170.0,,,,
+Wave6,value_counts,Inc2,,,169.0,,,,
+Wave6,descriptive_stats,,Age_year,,,51.72,15.01,20.0,84.0
+Wave6,descriptive_stats,,Dep_Total,,,4.68,5.84,0.0,27.0
+Wave6,threshold_counts,,,0 to 4,597.0,,,,
+Wave6,threshold_counts,,,5 to 9,170.0,,,,
+Wave6,threshold_counts,,,10 to 14,92.0,,,,
+Wave6,threshold_counts,,,15 to 19,53.0,,,,
+Wave6,threshold_counts,,,20 to 27,27.0,,,,
+Wave6,gender_counts,,,,475.0,,,,
+Wave6,gender_counts,,,,464.0,,,,
