@@ -51,17 +51,6 @@ This is implemented via a cumulative parameterization using a Dirichlet prior on
 - **Direct effect**: $c_{g,q}$
 - **Total effect**: $TE_{g,q,k} = c_{g,q} + a_g \times \beta_{g,q,k}$
 
-### Priors
-All parameters are assigned weakly informative priors, with hierarchical structure for intercepts and slopes using non-centered parameterization:
-
-$$\begin{align*}
-\alpha_{g}^M, \alpha_{g,q}^Y, a_g, c_{g,q}, \beta_{g,q,k} &\sim \text{Normal}(\mu_{\text{pooled}}, \sigma_{\text{pooled}}) \\
-\mu_{\text{pooled}} &\sim \text{Normal}(0, 1) \\
-\sigma_{\text{pooled}} &\sim \text{HalfNormal}(1)
-\end{align*}$$
-
-Cutpoints are given ordered Normal priors, and income increments are given a Dirichlet prior.
-
 ## Results
 
 

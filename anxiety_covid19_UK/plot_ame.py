@@ -345,6 +345,7 @@ for wa in range(len(waves)):
     
     plt.tight_layout()
     plt.savefig(f'effects_{wave_label}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'./tiff_images/effects_{wave_label}.tiff', dpi=300, bbox_inches='tight')
     plt.show()
     
     ## Compute effects in log-odds

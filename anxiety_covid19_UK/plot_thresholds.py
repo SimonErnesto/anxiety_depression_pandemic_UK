@@ -368,6 +368,7 @@ ax4.grid(True, alpha=0.3, axis='y')
 
 plt.tight_layout()
 plt.savefig("anxiety_posterior_vs_observed_wave1_wave6.png", dpi=300, bbox_inches='tight')
+plt.savefig("./tiff_images/anxiety_posterior_vs_observed_wave1_wave6.tiff", dpi=300, bbox_inches='tight')
 plt.show()
 
 # Print summary statistics

@@ -122,5 +122,6 @@ for wave_idx, wave_name in enumerate(waves):
 
 plt.tight_layout()
 plt.savefig('depression_income_effects_score0.png', dpi=300, bbox_inches='tight')
+plt.savefig('./tiff_images/depression_income_effects_score0.tiff', dpi=300, bbox_inches='tight')
 plt.show()
 
