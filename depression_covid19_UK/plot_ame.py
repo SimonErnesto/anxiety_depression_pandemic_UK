@@ -227,8 +227,8 @@ for wa in range(len(waves)):
                 yerr=errors, capsize=5, alpha=0.8)
     
     ax1.set_xlabel('Income Level')
-    ax1.set_ylabel('AME of Age on Income Level')
-    ax1.set_title('A. Age Effects on Income Distribution')
+    ax1.set_ylabel('AME')
+    ax1.set_title('A. Age Effects by Income Level')
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels(income_levels, rotation=45, ha='right')
     ax1.legend()
@@ -261,8 +261,8 @@ for wa in range(len(waves)):
                 yerr=errors, capsize=5, alpha=0.8)
     
     ax2.set_xlabel('PHQ-9 Score')
-    ax2.set_ylabel('AME of Age on PHQ-9 Score')
-    ax2.set_title('B. Age Effects on Depression Scores')
+    ax2.set_ylabel('AME')
+    ax2.set_title('B. Age Effects by Score')
     ax2.set_xticks(x_pos)
     ax2.set_xticklabels(score_levels, rotation=45, ha='right')
     ax2.legend()
@@ -299,8 +299,8 @@ for wa in range(len(waves)):
                 yerr=errors, capsize=5, alpha=0.8)
     
     ax3.set_xlabel('PHQ-9 Score')
-    ax3.set_ylabel('ADE: Inc1→Inc5 Effect')
-    ax3.set_title('C. Income Effects: Lowest → Highest Income')
+    ax3.set_ylabel('ADE (Inc5 - Inc1)')
+    ax3.set_title('C. Income Effects by Score')
     ax3.set_xticks(x_pos)
     ax3.set_xticklabels(score_levels, rotation=45, ha='right')
     ax3.legend()
@@ -337,7 +337,7 @@ for wa in range(len(waves)):
     
     ax4.set_xlabel('Income Comparison')
     ax4.set_ylabel('ADE on Score=0')
-    ax4.set_title('D. Income Effects on "Not at all (0)"')
+    ax4.set_title('D. Income Effects by Group Pairs')
     ax4.set_xticks(x_pos)
     ax4.set_xticklabels(income_comparisons, rotation=45, ha='right')
     ax4.legend()
