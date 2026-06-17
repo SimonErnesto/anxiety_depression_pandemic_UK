@@ -240,12 +240,9 @@ for wave in ['Wave1', 'Wave6']:
                 })
 
 pivot_df = pd.DataFrame(pivot_data)
-pivot_df.to_csv('depression_probabilities_pivot_format.csv', index=False)
+pivot_df.to_csv('depression_thresholds_income.csv', index=False)
 
 print("CSV files saved for DEPRESSION (PHQ-9):")
-print("1. depression_probabilities_by_income_gender.csv - Long format with all estimates")
-print("2. depression_probabilities_pivot_format.csv - More readable pivot format")
-print("\nPreview of the summary data:")
 print(summary_df.head(20))
 
 # =============================================

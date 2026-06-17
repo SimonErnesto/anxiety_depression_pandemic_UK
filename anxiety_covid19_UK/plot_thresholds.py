@@ -236,13 +236,10 @@ for wave in ['Wave1', 'Wave6']:
                 })
 
 pivot_df = pd.DataFrame(pivot_data)
-pivot_df.to_csv('gad_probabilities_pivot_format.csv', index=False)
+pivot_df.to_csv('anxiety_thresholds_income.csv', index=False)
 
 print("CSV files saved:")
-print("1. gad_probabilities_by_income_gender.csv - Long format with all estimates")
-print("2. gad_probabilities_pivot_format.csv - More readable pivot format")
-print("\nPreview of the summary data:")
-print(summary_df.head(20))
+
 
 # =============================================
 # CREATE 4-PANEL FIGURE (your original plotting code)
