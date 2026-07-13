@@ -7,11 +7,11 @@ import seaborn as sns
 
 np.random.seed(27)
 
-plt.rcParams['font.family'] = "DeJavu Serif"
-plt.rcParams['font.serif'] = "Cambria Math"
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Arial']
 plt.rcParams['font.size'] = 12
 
-sns.set(style="whitegrid", font="DeJavu Serif")
+sns.set(style="whitegrid", font="Arial")
 
 # Load wave 1 data
 data_w1 = pd.read_csv("./data/anxiety_covid19_UK_wave1_data.csv")
@@ -242,11 +242,13 @@ print("CSV files saved:")
 
 
 # =============================================
-# CREATE 4-PANEL FIGURE (your original plotting code)
+# CREATE 4-PANEL FIGURE for Anxiety
 # =============================================
+fig_width_in = 7.5   # PLOS Max Width
+fig_height_in = 8.75 # PLOS Max Height
+dpi = 600            # Your requested high resolution
 
-# Create 4-panel figure (no suptitle)
-fig, axes = plt.subplots(2, 2, figsize=(18, 14))
+fig, axes = plt.subplots(2, 2, figsize=(fig_width_in, fig_height_in), dpi=dpi)
 
 x = np.arange(len(income_levels))
 width = 0.12
@@ -262,6 +264,7 @@ for thresh_idx, (threshold, color) in enumerate(zip(thresholds, colors)):
     yerr_lower = np.maximum(post_means - post_lower, 0)
     yerr_upper = np.maximum(post_upper - post_means, 0)
     
+    # 1. Keep posterior labels unique for every threshold
     ax1.bar(x + posterior_offsets[thresh_idx] - width/2, post_means, width, 
             label=f'{threshold} (Posterior)', color=color, alpha=0.7, 
             edgecolor='black', linewidth=0.5)
@@ -270,16 +273,20 @@ for thresh_idx, (threshold, color) in enumerate(zip(thresholds, colors)):
                  ecolor='black', capsize=2, alpha=0.5, linewidth=1)
     
     obs_means = [observed_w1['Female'][inc][thresh_idx] for inc in income_levels]
+    
+    # 2. Only apply a single "Observed" label on the very first loop iteration
+    obs_label = 'Observed' if thresh_idx == 0 else None
+    
     ax1.bar(x + observed_offsets[thresh_idx] + width/2, obs_means, width, 
-            label=f'{threshold} (Observed)', color='grey', alpha=0.5, 
+            label=obs_label, color='grey', alpha=0.5, 
             edgecolor='black', linewidth=0.5, hatch='//')
+
 ax1.set_xlabel('Income Level', fontsize=12)
 ax1.set_ylabel('Proportion', fontsize=12)
-ax1.set_title('A: Wave-1 - Females', fontsize=14, fontweight='bold', loc='left')
+ax1.set_title('A: Wave-1 - Females', fontsize=12, fontweight='bold', loc='left')
 ax1.set_xticks(x)
 ax1.set_xticklabels(income_levels)
 ax1.set_ylim(0, 1)
-ax1.legend(loc='upper right', fontsize=8, ncol=2)
 ax1.grid(True, alpha=0.3, axis='y')
 
 # Panel B: Wave 1 - Males
@@ -302,11 +309,10 @@ for thresh_idx, (threshold, color) in enumerate(zip(thresholds, colors)):
             color='grey', alpha=0.5, edgecolor='black', linewidth=0.5, hatch='//')
 ax2.set_xlabel('Income Level', fontsize=12)
 ax2.set_ylabel('Proportion', fontsize=12)
-ax2.set_title('B: Wave-1 - Males', fontsize=14, fontweight='bold', loc='left')
+ax2.set_title('B: Wave-1 - Males', fontsize=12, fontweight='bold', loc='left')
 ax2.set_xticks(x)
 ax2.set_xticklabels(income_levels)
 ax2.set_ylim(0, 1)
-ax2.legend(loc='upper right', fontsize=8, ncol=2)
 ax2.grid(True, alpha=0.3, axis='y')
 
 # Panel C: Wave 6 - Females
@@ -326,14 +332,19 @@ for thresh_idx, (threshold, color) in enumerate(zip(thresholds, colors)):
     
     obs_means = [observed_w6['Female'][inc][thresh_idx] for inc in income_levels]
     ax3.bar(x + observed_offsets[thresh_idx] + width/2, obs_means, width, 
-            color='grey', alpha=0.5, edgecolor='black', linewidth=0.5, hatch='//')
+            color='grey', alpha=0.5, edgecolor='black', linewidth=0.5, hatch='//',
+            label="Observed")
+
+    handles, labels = ax3.get_legend_handles_labels()
+
+ax3.legend([handles[0]], [labels[0]], loc='upper left', fontsize=10)
+
 ax3.set_xlabel('Income Level', fontsize=12)
 ax3.set_ylabel('Proportion', fontsize=12)
-ax3.set_title('C: Wave-6 - Females', fontsize=14, fontweight='bold', loc='left')
+ax3.set_title('C: Wave-6 - Females', fontsize=12, fontweight='bold', loc='left')
 ax3.set_xticks(x)
 ax3.set_xticklabels(income_levels)
 ax3.set_ylim(0, 1)
-ax3.legend(loc='upper right', fontsize=8, ncol=2)
 ax3.grid(True, alpha=0.3, axis='y')
 
 # Panel D: Wave 6 - Males
@@ -354,29 +365,40 @@ for thresh_idx, (threshold, color) in enumerate(zip(thresholds, colors)):
     obs_means = [observed_w6['Male'][inc][thresh_idx] for inc in income_levels]
     ax4.bar(x + observed_offsets[thresh_idx] + width/2, obs_means, width, 
             color='grey', alpha=0.5, edgecolor='black', linewidth=0.5, hatch='//')
+    
 ax4.set_xlabel('Income Level', fontsize=12)
 ax4.set_ylabel('Proportion', fontsize=12)
-ax4.set_title('D: Wave-6 - Males', fontsize=14, fontweight='bold', loc='left')
+ax4.set_title('D: Wave-6 - Males', fontsize=12, fontweight='bold', loc='left')
 ax4.set_xticks(x)
 ax4.set_xticklabels(income_levels)
 ax4.set_ylim(0, 1)
-ax4.legend(loc='upper right', fontsize=8, ncol=2)
 ax4.grid(True, alpha=0.3, axis='y')
 
+handles, labels = ax1.get_legend_handles_labels()
+
+desired_order = [f'{t} (Posterior)' for t in thresholds] 
+
+ordered_handles = []
+ordered_labels = []
+
+for target_label in desired_order:
+    if target_label in labels:
+        idx = labels.index(target_label)
+        ordered_handles.append(handles[idx])
+        ordered_labels.append(labels[idx])
+
 plt.tight_layout()
-plt.savefig("anxiety_posterior_vs_observed_wave1_wave6.png", dpi=300, bbox_inches='tight')
-plt.savefig("./tiff_images/anxiety_posterior_vs_observed_wave1_wave6.tiff", dpi=300, bbox_inches='tight')
+fig.subplots_adjust(bottom=0.16)
+
+fig.legend(ordered_handles, ordered_labels, loc='upper center', bbox_to_anchor=(0.5, 0.09), 
+           fontsize=10, ncol=5, frameon=True)
+
+plt.savefig("anxiety_posterior_vs_observed_wave1_wave6.png", dpi=600, bbox_inches='tight')
+plt.savefig(
+    "./tiff_images/anxiety_posterior_vs_observed_wave1_wave6.tiff", 
+    dpi=dpi, 
+    bbox_inches='tight',
+    pil_kwargs={'compression': 'tiff_lzw'}
+)
 plt.show()
 
-# Print summary statistics
-print("\n" + "="*60)
-print("SUMMARY STATISTICS BY INCOME AND GENDER")
-print("="*60)
-for wave in ['Wave1', 'Wave6']:
-    print(f"\n{wave}:")
-    for gender in ['Female', 'Male']:
-        print(f"\n  {gender}:")
-        subset = summary_df[(summary_df['Wave'] == wave) & (summary_df['Gender'] == gender)]
-        for threshold in thresholds:
-            thresh_subset = subset[subset['Threshold'] == threshold]
-            print(f"    {threshold}: Mean posterior probability = {thresh_subset['Posterior_Probability_Mean'].mean():.3f}")

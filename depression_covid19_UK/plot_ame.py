@@ -7,11 +7,11 @@ import seaborn as sns
 from scipy.special import logit, expit
 import pandas as pd
 
-plt.rcParams['font.family'] = "DeJavu Serif"
-plt.rcParams['font.serif'] = "Cambria Math"
-plt.rcParams['font.size'] = 12
+plt.rcParams['font.family'] = "Sans Serif"
+plt.rcParams['font.serif'] = "Arial"
+plt.rcParams['font.size'] = 10
 
-sns.set(style="whitegrid", font="DeJavu Serif")
+sns.set(style="whitegrid", font="Arial")
 
 waves = ["wave1", "wave6"]
 
@@ -202,7 +202,11 @@ for wa in range(len(waves)):
     score_levels = ["Score 0", "Score 1", "Score 2", "Score 3"]
     income_comparisons = ["Inc1→Inc2", "Inc1→Inc3", "Inc1→Inc4", "Inc1→Inc5"]
     
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig_width_in = 7.5   # PLOS Max Width
+    fig_height_in = 7.5  # Keeps the aspect ratios balanced
+    dpi = 600 
+
+    fig, axes = plt.subplots(2, 2, figsize=(fig_width_in, fig_height_in))
     colors = ['#556B2F', '#8E4585']
     
     # Panel 1: Age effects on income
@@ -346,7 +350,7 @@ for wa in range(len(waves)):
     
     plt.tight_layout()
     plt.savefig(f'effects_{wave_label}.png', dpi=300, bbox_inches='tight')
-    plt.savefig(f'./tiff_images/effects_{wave_label}.tiff', dpi=300, bbox_inches='tight')
+    plt.savefig(f'./tiff_images/effects_{wave_label}.tiff', dpi=600, bbox_inches='tight')
     plt.show()
     
     ## Compute effects in log-odds

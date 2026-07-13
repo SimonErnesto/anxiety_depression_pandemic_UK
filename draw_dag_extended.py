@@ -117,8 +117,8 @@ def build_mediator_dag():
     """Builds the DAG for the Income (Mediator) Model"""
     dot = graphviz.Digraph('Mediator_DAG', engine='neato', format='png')
     dot.attr(overlap='false', splines='true', sep='+0.5', pad='0.5')
-    dot.attr('node', fontname='Helvetica', fontsize='11', margin='0.2')
-    dot.attr('edge', arrowsize='0.8')
+    dot.attr('node', fontname='Arial', fontsize='12', margin='0.2')
+    dot.attr('edge', arrowsize='0.8', dpi="600")
 
     # 1. Nodes (Adjusted for Mediator Model)
     # Exposures
@@ -166,8 +166,8 @@ def build_outcome_dag():
     """Builds the DAG for the Mental Health (Outcome) Model"""
     dot = graphviz.Digraph('Outcome_DAG', engine='neato', format='png')
     dot.attr(overlap='false', splines='true', sep='+0.5', pad='0.5')
-    dot.attr('node', fontname='Helvetica', fontsize='11', margin='0.2')
-    dot.attr('edge', arrowsize='0.8')
+    dot.attr('node', fontname='Arial', fontsize='12', margin='0.2')
+    dot.attr('edge', arrowsize='0.8', dpi="600")
 
     # 1. Nodes (Adjusted for Outcome Model)
     # Exposures
@@ -221,18 +221,18 @@ def build_outcome_dag():
 build_mediator_dag()
 build_outcome_dag()
 
-fig, axes = plt.subplots(1, 2, figsize=(24, 10))
+fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
 # Plot Mediator DAG
 img1 = mpimg.imread('DAG_Mediator.png')
 axes[0].imshow(img1)
-axes[0].set_title("Model 1: Mediator (Income)", fontsize=14, fontweight='bold', pad=20)
+axes[0].set_title("Model 1: Mediator (Income)", fontsize=10, fontweight='bold', pad=20)
 axes[0].axis('off')
 
 # Plot Outcome DAG
 img2 = mpimg.imread('DAG_Outcome.png')
 axes[1].imshow(img2)
-axes[1].set_title("Model 2: Outcome (Mental Health)", fontsize=14, fontweight='bold', pad=20)
+axes[1].set_title("Model 2: Outcome (Mental Health)", fontsize=10, fontweight='bold', pad=20)
 axes[1].axis('off')
 
 # --- Unified Legend ---
@@ -249,12 +249,13 @@ legend_elements = [
     Line2D([0], [0], color='#666666', linewidth=1.5, linestyle=':', label='Nuisance / Latent path')
 ]
 
-fig.legend(handles=legend_elements, loc='lower center', fontsize=11, 
+fig.legend(handles=legend_elements, loc='lower center', fontsize=8, 
            ncol=4, frameon=True, fancybox=True, shadow=True, 
-           title='Legend', title_fontsize=12, edgecolor='black',
-           bbox_to_anchor=(0.5, -0.02))
+           edgecolor='black',
+           bbox_to_anchor=(0.5, -0.08))
 
 plt.tight_layout(rect=[0, 0.08, 1, 1]) # Make room for the bottom legend
 plt.savefig('DAG_Two_Models_Final.png', dpi=600, bbox_inches='tight')
 plt.savefig('DAG_Two_Models_Final.pdf', dpi=300, bbox_inches='tight')
+plt.savefig('DAG_Two_Models_Final.tiff', dpi=600, bbox_inches='tight')
 plt.show()

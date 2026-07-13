@@ -4,9 +4,10 @@ import arviz as az
 import matplotlib.pyplot as plt
 from scipy.special import expit
 
-plt.rcParams['font.family'] = "DeJavu Serif"
-plt.rcParams['font.serif'] = "Cambria Math"
-plt.rcParams['font.size'] = 12
+plt.rcParams['font.family'] = "Sans Serif"
+plt.rcParams['font.serif'] = "Arial"
+plt.rcParams['font.size'] = 10
+
 
 def income_on_gad(gender_idx, income_j, income_k, age_values, age_mean, age_std, 
                   alpha_2, c, b, delta, kappa_k, score_idx=0):
@@ -90,10 +91,17 @@ for wave_idx, wave_name in enumerate(waves):
     all_results[wave_name] = results_gender
 
 print("\nCreating 4-panel plot with SD (posterior uncertainty)...")
-fig, axes = plt.subplots(2, 2, figsize=(14, 11))
+fig_width_in = 7.5   # PLOS Max Width
+fig_height_in = 7.5  # Keeps the aspect ratios balanced
+dpi = 600 
 
+fig, axes = plt.subplots(2, 2, figsize=(fig_width_in, fig_height_in))
+
+letters = ["A. ", "B. ", "C. ", "D. "]
+l = -1
 for wave_idx, wave_name in enumerate(waves):
     for gender_idx, gender in enumerate(genders):
+        l += 1
         ax = axes[wave_idx, gender_idx]
         
         results = all_results[wave_name][gender_idx]
@@ -111,17 +119,17 @@ for wave_idx, wave_name in enumerate(waves):
                            mean_effect + sd_effect, 
                            color=colors[k_idx], alpha=0.25)
         
-        ax.set_xlabel('Age (years)', fontsize=11)
-        ax.set_ylabel('Probability Change', fontsize=11)
+        ax.set_xlabel('Age (years)', fontsize=10)
+        ax.set_ylabel('Probability Change', fontsize=10)
         ax.set_ylim(-0.1, 0.25)
-        ax.set_title(f'{wave_labels[wave_idx]} {gender}\nIncome Effect on "No depression" (Score=0)', 
-                    fontsize=12, fontweight='bold')
+        ax.set_title(f'{letters[l]}{wave_labels[wave_idx]} {gender}\n "No depression" (Score=0)', 
+                    fontsize=12)
         ax.legend(loc='best', fontsize=8)
         ax.grid(True, alpha=0.3, linestyle='--')
         ax.axhline(y=0, color='gray', linestyle='-', linewidth=1, alpha=0.5)
 
 plt.tight_layout()
 plt.savefig('depression_income_effects_score0.png', dpi=300, bbox_inches='tight')
-plt.savefig('./tiff_images/depression_income_effects_score0.tiff', dpi=300, bbox_inches='tight')
+plt.savefig('./tiff_images/depression_income_effects_score0.tiff', dpi=600, bbox_inches='tight')
 plt.show()
 
