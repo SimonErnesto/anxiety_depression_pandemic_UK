@@ -257,5 +257,5 @@ fig.legend(handles=legend_elements, loc='lower center', fontsize=8,
 plt.tight_layout(rect=[0, 0.08, 1, 1]) # Make room for the bottom legend
 plt.savefig('DAG_Two_Models_Final.png', dpi=600, bbox_inches='tight')
 plt.savefig('DAG_Two_Models_Final.pdf', dpi=300, bbox_inches='tight')
-plt.savefig('DAG_Two_Models_Final.tiff', dpi=600, bbox_inches='tight')
+plt.savefig('DAG_Two_Models_Final.tiff', dpi=600, bbox_inches='tight', pil_kwargs={"compression": "tiff_lzw"})
 plt.show()

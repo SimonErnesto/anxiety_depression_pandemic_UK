@@ -1,9 +1,9 @@
 Effect,Sex,Mean,SD,HDI_5,HDI_95
-Mediator,Female,0.09,0.05,0.011,0.175
-Mediator,Male,0.109,0.066,-0.005,0.211
-Direct,Female,0.14,0.095,-0.012,0.292
-Direct,Male,0.205,0.106,0.042,0.385
-Indirect,Female,-0.00072,0.00075,-0.00192,0.00025
-Indirect,Male,-0.00213,0.00181,-0.00484,0.00049
-Total,Female,0.14,0.095,-0.013,0.291
-Total,Male,0.203,0.106,0.031,0.374
+Mediator,Female,0.09,0.05,0.013,0.178
+Mediator,Male,0.108,0.066,-0.002,0.215
+Direct,Female,0.14,0.094,-0.007,0.293
+Direct,Male,0.203,0.108,0.025,0.374
+Indirect,Female,-0.00073,0.00074,-0.00187,0.00022
+Indirect,Male,-0.00215,0.00184,-0.00504,0.00037
+Total,Female,0.139,0.094,-0.008,0.292
+Total,Male,0.201,0.108,0.021,0.371
